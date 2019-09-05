@@ -1,53 +1,32 @@
-import NanoParsec
+module Main where
 
-import Control.Applicative
-import Control.Monad
-import System.IO
+import Text.Parsec
+import Text.Parsec.Text
 
-data Expr
-  = Add Expr Expr
-  | Sub Expr Expr
-  | Mul Expr Expr
-  | Lit Int
+import qualified Data.Text as T
+
+data SExp
+  = Atom T.Text
+  | List [SExp]
   deriving Show
 
-eval :: Expr -> Int
-eval e = case e of
-  Add x y -> eval x + eval y
-  Sub x y -> eval x - eval y
-  Mul x y -> eval x * eval y
-  Lit x   -> x
+parseSExp :: Parser SExp
+parseSExp = parseAtom
+  <|> parseList
 
-int :: Parser Expr
-int = do
-  n <- token number
-  return (Lit n)
+parseAtom :: Parser SExp
+parseAtom = Atom . T.pack <$> many1 (letter <|> digit)
 
-expr :: Parser Expr
-expr = term `chain` addop
-
-term :: Parser Expr
-term = factor `chain` mulop
-
-factor :: Parser Expr
-factor = int <|> parens expr
-
-infixOp :: String -> (a -> a -> a) -> Parser (a -> a -> a)
-infixOp x f = reserved x >> return f
-
-addop :: Parser (Expr -> Expr -> Expr)
-addop = (infixOp "+" Add) <|> (infixOp "-" Sub)
-
-mulop :: Parser (Expr -> Expr -> Expr)
-mulop = infixOp "*" Mul
-
-run :: String -> Expr
-run = runParser expr
+parseList :: Parser SExp
+parseList = do
+  _ <- char '('
+  l <- sepBy parseSExp spaces
+  _ <- char ')'
+  return $ List l
 
 main :: IO ()
 main = do
-  hSetBuffering stdout NoBuffering
-  forever $ do
-    putStr "> "
-    x <- getLine
-    print $ eval $ run x
+  input <- T.pack <$> getLine
+  putStrLn $ case parse parseSExp "<stdin>" input of
+    Left err -> show err
+    Right x  -> show x
