@@ -4,6 +4,11 @@ import Data.Char ()
 import Control.Monad ()
 import Control.Applicative ()
 
+{-
+  `Parser a` is a type.
+  `Parser { parse :: String -> [(a, String)] }` is its single constructor.
+  `parse :: Parser a -> String -> [(a, String)]` is the actual type of `parse`.
+-}
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
 runParser :: Parser a -> String -> a
