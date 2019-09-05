@@ -1,8 +1,8 @@
 module NanoParsec where
 
-import Data.Char
-import Control.Monad
 import Control.Applicative
+import Control.Monad
+import Data.Char
 
 {-
   `Parser a` is a type.
@@ -70,6 +70,10 @@ satisfy f = item >>= \c ->
 
 oneOf :: [Char] -> Parser Char
 oneOf s = satisfy (flip elem s)
+
+chain :: Parser a -> Parser (a -> a -> a) -> Parser a
+p `chain` op = do { x <- p; rest x }
+  where rest x = do { f <- op; y <- p; rest (f x y) } <|> return x
 
 spaces :: Parser String
 spaces = many $ oneOf " \n\r"
