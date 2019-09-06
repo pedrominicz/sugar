@@ -1,8 +1,6 @@
 module Sugar where
 
-import Data.Map (Map)
-
-type Context = Map String Sugar
+type Context = [(String, ([Sugar] -> Sugar))]
 
 data Sugar
   = Array [Sugar]

@@ -4,9 +4,14 @@ module Eval (
 
 import Sugar
 
-import Data.Map (empty)
-
 eval :: Context -> Sugar -> Either String (Context, Sugar)
-eval _ (List [])  = Left "Eval.eval: empty list"
-eval _ (Number x) = Right $ (empty, Number x)
-eval _ _          = Left "Eval.eval: undefined"
+eval ctx (Identifier x) =
+  case lookup x ctx of
+    Just f  -> Right (ctx, f [])
+    Nothing -> Left $ "Eval.eval: unbound identifier: `" ++ x ++ "`"
+eval ctx (List (Identifier x:args)) =
+  case lookup x ctx of
+    Just f  -> Right (ctx, f args)
+    Nothing -> Left $ "Eval.eval: unbound identifier: `" ++ x ++ "`"
+eval ctx (Number x) = Right (ctx, Number x)
+eval _ _ = Left "Eval.eval: undefined"
