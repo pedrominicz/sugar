@@ -3,6 +3,8 @@ module Parser
   , readSugarFile
   ) where
 
+import Sugar
+
 import Text.Parsec hiding (string)
 import Text.Parsec.Text
 import qualified Text.Parsec.Token as Tok
@@ -10,13 +12,6 @@ import qualified Text.Parsec.Token as Tok
 import Control.Monad (mzero)
 import Data.Functor.Identity (Identity)
 import qualified Data.Text as T
-
-data Sugar
-  = Identifier T.Text
-  | List [Sugar]
-  | Number Integer
-  | String T.Text
-  deriving Show
 
 lexer :: Tok.GenTokenParser T.Text () Identity
 lexer = Tok.makeTokenParser style
