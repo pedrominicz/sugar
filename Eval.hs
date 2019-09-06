@@ -4,13 +4,9 @@ module Eval (
 
 import Sugar
 
-evalList :: Sugar -> [Sugar] -> Integer
-evalList (Identifier "*") xs = product $ map eval xs
-evalList (Identifier "+") xs = sum $ map eval xs
-evalList _ _                 = error "Eval.evalList: undefined"
+import Data.Map (empty)
 
-eval :: Sugar -> Integer
-eval (List [])     = error "Eval.eval: empty list"
-eval (List (x:xs)) = evalList x xs
-eval (Number x)    = x
-eval _             = error "Eval.eval: undefined"
+eval :: Context -> Sugar -> Either String (Context, Sugar)
+eval _ (List [])  = Left "Eval.eval: empty list"
+eval _ (Number x) = Right $ (empty, Number x)
+eval _ _          = Left "Eval.eval: undefined"

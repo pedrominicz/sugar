@@ -1,12 +1,19 @@
 module Sugar where
 
-import qualified Data.Map as M
+import Data.Map (Map)
 
-type Context = M.Map String Sugar
+type Context = Map String Sugar
 
 data Sugar
-  = Identifier String
+  = Array [Sugar]
+  | Identifier String
   | List [Sugar]
   | Number Integer
   | String String
-  deriving Show
+
+instance Show Sugar where
+  show (Array xs)     = "[" ++ (unwords $ map show xs) ++ "]"
+  show (Identifier x) = x
+  show (List xs)      = "(" ++ (unwords $ map show xs) ++ ")"
+  show (Number x)     = show x
+  show (String x)     = x

@@ -18,7 +18,7 @@ lexer = Tok.makeTokenParser style
           { Tok.commentStart    = ""
           , Tok.commentEnd      = ""
           , Tok.commentLine     = ";"
-          , Tok.nestedComments  = False
+          , Tok.nestedComments  = True
           , Tok.identStart      = letter <|> oneOf "*+-./<=>?"
           , Tok.identLetter     = letter <|> oneOf "*+-./<=>?" <|> digit
           , Tok.opStart         = mzero
@@ -32,13 +32,17 @@ sugarList :: Parser [Sugar]
 sugarList = sugar `sepBy` Tok.whiteSpace lexer
 
 sugar :: Parser Sugar
-sugar = number
+sugar = array
+    <|> number
     <|> identifier
     <|> list
     <|> string
 
+array :: Parser Sugar
+array = Array <$> Tok.brackets lexer sugarList
+
 number :: Parser Sugar
-number = Number <$> try (sign <*> Tok.decimal lexer)
+number = Number <$> try (sign <*> Tok.decimal lexer) <* Tok.whiteSpace lexer
   where sign = char '-' *> return negate
            <|> char '+' *> return id
            <|> return id
