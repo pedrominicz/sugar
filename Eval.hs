@@ -4,17 +4,13 @@ module Eval (
 
 import Sugar
 
-import qualified Data.Text as T
-
 evalList :: Sugar -> [Sugar] -> Integer
-evalList (Identifier x) xs = case T.unpack x of
-  "*" -> product $ map eval xs
-  "+" -> sum $ map eval xs
-  _   -> error "Eval.evalList: undefined identifier"
-evalList _ _ = error "Eval.evalList: undefined"
+evalList (Identifier "*") xs = product $ map eval xs
+evalList (Identifier "+") xs = sum $ map eval xs
+evalList _ _                 = error "Eval.evalList: undefined"
 
 eval :: Sugar -> Integer
-eval s = case s of
-  List (x:xs) -> evalList x xs
-  Number x    -> x
-  _           -> error "Eval.eval: undefined"
+eval (List [])     = error "Eval.eval: empty list"
+eval (List (x:xs)) = evalList x xs
+eval (Number x)    = x
+eval _             = error "Eval.eval: undefined"

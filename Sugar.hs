@@ -1,10 +1,12 @@
 module Sugar where
 
-import qualified Data.Text as T
+import qualified Data.Map as M
+
+type Context = M.Map String Sugar
 
 data Sugar
-  = Identifier T.Text
+  = Identifier String
   | List [Sugar]
   | Number Integer
-  | String T.Text
+  | String String
   deriving Show

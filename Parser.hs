@@ -6,20 +6,19 @@ module Parser
 import Sugar
 
 import Text.Parsec hiding (string)
-import Text.Parsec.Text
+import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Token as Tok
 
 import Control.Monad (mzero)
 import Data.Functor.Identity (Identity)
-import qualified Data.Text as T
 
-lexer :: Tok.GenTokenParser T.Text () Identity
+lexer :: Tok.GenTokenParser String () Identity
 lexer = Tok.makeTokenParser style
   where style = Tok.LanguageDef
           { Tok.commentStart    = ""
           , Tok.commentEnd      = ""
           , Tok.commentLine     = ";"
-          , Tok.nestedComments  = True
+          , Tok.nestedComments  = False
           , Tok.identStart      = letter <|> oneOf "*+-./<=>?"
           , Tok.identLetter     = letter <|> oneOf "*+-./<=>?" <|> digit
           , Tok.opStart         = mzero
@@ -45,19 +44,19 @@ number = Number <$> try (sign <*> Tok.decimal lexer)
            <|> return id
 
 identifier :: Parser Sugar
-identifier = Identifier . T.pack <$> Tok.identifier lexer
+identifier = Identifier <$> Tok.identifier lexer
 
 list :: Parser Sugar
 list = List <$> Tok.parens lexer sugarList
 
 string :: Parser Sugar
-string = String . T.pack <$> Tok.stringLiteral lexer
+string = String <$> Tok.stringLiteral lexer
 
-wrap :: ParsecT T.Text () Identity a -> ParsecT T.Text () Identity a
+wrap :: ParsecT String () Identity a -> ParsecT String () Identity a
 wrap p = Tok.whiteSpace lexer *> p <* Tok.whiteSpace lexer <* eof
 
-readSugar :: T.Text -> Either ParseError Sugar
+readSugar :: String -> Either ParseError Sugar
 readSugar = parse (wrap sugar) "<stdin>"
 
-readSugarFile :: SourceName -> T.Text -> Either ParseError Sugar
+readSugarFile :: SourceName -> String -> Either ParseError Sugar
 readSugarFile = parse $ wrap (List <$> sugarList)
