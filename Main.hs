@@ -8,11 +8,20 @@ import qualified Data.Text as T
 data SExp
   = Atom T.Text
   | List [SExp]
+  | Number Integer
   deriving Show
 
 parseSExp :: Parser SExp
-parseSExp = parseAtom
+parseSExp = parseNumber
+  <|> parseAtom
   <|> parseList
+
+parseNumber :: Parser SExp
+parseNumber = Number <$> (sign <*> decimal)
+  where sign = char '-' *> return negate
+           <|> char '+' *> return id
+           <|> return id
+        decimal = read <$> many1 digit
 
 parseAtom :: Parser SExp
 parseAtom = Atom . T.pack <$> many1 (letter <|> digit)
