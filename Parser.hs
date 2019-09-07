@@ -59,8 +59,14 @@ string = String <$> Tok.stringLiteral lexer
 wrap :: ParsecT String () Identity a -> ParsecT String () Identity a
 wrap p = Tok.whiteSpace lexer *> p <* Tok.whiteSpace lexer <* eof
 
-readSugar :: String -> Either ParseError Sugar
-readSugar = parse (wrap sugar) "<stdin>"
+readSugar :: String -> Sugar
+readSugar s =
+  case parse (wrap sugar) "<stdin>" s of
+    Left _  -> error "; parse error"
+    Right x -> x
 
-readSugarFile :: SourceName -> String -> Either ParseError Sugar
-readSugarFile = parse $ wrap (List <$> sugarList)
+readSugarFile :: SourceName -> String -> Sugar
+readSugarFile name s =
+  case parse (wrap $ List <$> sugarList) name s of
+    Left _  -> error "; parse error"
+    Right x -> x

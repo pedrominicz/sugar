@@ -4,14 +4,44 @@ module Eval (
 
 import Sugar
 
-eval :: Context -> Sugar -> Either String (Context, Sugar)
+-- <form> -> <definition> | <expression>
+eval :: Context -> Sugar -> (Context, Sugar)
+
+-- <definition> -> (let (<identifier>+) <body>)
+eval ctx x@(List (Identifier "let":(List (Identifier f:args)):body)) =
+  ((f, \_ -> Identifier ":)"):ctx, x)
+eval _ x@(List (Identifier "let":_)) =
+  error $ "; malformed definition '" ++ show x ++ "'"
+
+-- <variable> -> <identifier>
 eval ctx (Identifier x) =
   case lookup x ctx of
-    Just f  -> Right (ctx, f [])
-    Nothing -> Left $ "Eval.eval: unbound identifier: `" ++ x ++ "`"
+    Just f  -> (ctx, f [])
+    Nothing -> error $ "; unbound identifier '" ++ x ++ "'"
+
 eval ctx (List (Identifier x:args)) =
   case lookup x ctx of
-    Just f  -> Right (ctx, f args)
-    Nothing -> Left $ "Eval.eval: unbound identifier: `" ++ x ++ "`"
-eval ctx (Number x) = Right (ctx, Number x)
-eval _ _ = Left "Eval.eval: undefined"
+    Just f  -> (ctx, f args)
+    Nothing -> error $ "; unbound identifier '" ++ x ++ "'"
+eval ctx (Number x) = (ctx, Number x)
+eval _ _ = error "Eval.eval: undefined"
+
+{-
+
+<program> -> form*
+<form>    -> <definition> | <expression>
+
+<definition> -> (let (<variable>+) <body>)
+<variable>   -> <identifier>
+<body>       -> <expression>
+
+<expression>  -> <constant>
+               | <variable>
+               | (if <expression> <expression> <expression>)
+               | <application>
+<constant>    -> <number>
+               | <string>
+               | <array>
+<application> -> (<expression> <expression>*)
+
+-}

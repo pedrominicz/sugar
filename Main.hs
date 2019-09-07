@@ -2,17 +2,19 @@ module Main where
 
 import Eval
 import Parser
+import Sugar
 
-repl :: IO ()
-repl = do
-  input <- readSugar <$> getLine
-  case input of
-    Left err    -> putStrLn $ show err
-    Right sugar ->
-      case eval [] sugar of
-        Left err     -> putStrLn err
-        Right (_, x) -> putStrLn $ show x
-  repl
+import System.Console.Haskeline
+
+repl :: Context -> InputT IO ()
+repl ctx = do
+  maybeInput <- getInputLine "> "
+  case maybeInput of
+    Nothing    -> return ()
+    Just input -> do
+        let (ctx', result) = eval ctx $ readSugar input
+        outputStrLn $ show result
+        repl ctx'
 
 main :: IO ()
-main = repl
+main = runInputT defaultSettings (repl [])

@@ -1,6 +1,6 @@
 module Sugar where
 
-type Context = [(String, ([Sugar] -> Sugar))]
+type Context = [(String, [Sugar] -> Sugar)]
 
 data Sugar
   = Array [Sugar]
