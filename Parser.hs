@@ -1,72 +1,54 @@
-module Parser
-  ( readSugar
-  , readSugarFile
-  ) where
+module Parser (Tree) where
 
-import Sugar
-
-import Text.Parsec hiding (string)
-import Text.Parsec.String (Parser)
-import qualified Text.Parsec.Token as Tok
-
-import Control.Monad (mzero)
 import Data.Functor.Identity (Identity)
+import Text.Parsec
+import Text.Parsec.String (Parser)
 
-lexer :: Tok.GenTokenParser String () Identity
-lexer = Tok.makeTokenParser style
-  where style = Tok.LanguageDef
-          { Tok.commentStart    = ""
-          , Tok.commentEnd      = ""
-          , Tok.commentLine     = ";"
-          , Tok.nestedComments  = True
-          , Tok.identStart      = letter <|> oneOf "*+-./<=>?"
-          , Tok.identLetter     = letter <|> oneOf "*+-./<=>?" <|> digit
-          , Tok.opStart         = mzero
-          , Tok.opLetter        = mzero
-          , Tok.reservedOpNames = []
-          , Tok.reservedNames   = []
-          , Tok.caseSensitive   = True
-          }
+data Tree
+  = Atom String
+  | List [Tree]
+  | Number Integer
+  deriving Show
 
-sugarList :: Parser [Sugar]
-sugarList = sugar `sepBy` Tok.whiteSpace lexer
+instance Read Tree where
+  readsPrec _ =
+    \s -> case parse (wrap tree) "" s of
+      Left e  -> error $ show e
+      Right x -> [(x, "")]
 
-sugar :: Parser Sugar
-sugar = array
-    <|> number
-    <|> identifier
-    <|> list
-    <|> string
+tree :: Parser Tree
+tree = number
+   <|> atom
+   <|> list
 
-array :: Parser Sugar
-array = Array <$> Tok.brackets lexer sugarList
+number :: Parser Tree
+number = Number <$> try number' <* whitespace <?> "number"
+  where number' = do
+          sign   <- many (oneOf "+-")
+          digits <- many1 digit
+          return $ read (sign ++ digits)
 
-number :: Parser Sugar
-number = Number <$> try (sign <*> Tok.decimal lexer) <* Tok.whiteSpace lexer
-  where sign = char '-' *> return negate
-           <|> char '+' *> return id
-           <|> return id
+whitespace :: Parser ()
+whitespace = skipMany (skipMany1 space <|> comment <?> "")
+  where comment = do
+          _ <- try $ char ';'
+          skipMany (satisfy (/= '\n'))
+          return ()
 
-identifier :: Parser Sugar
-identifier = Identifier <$> Tok.identifier lexer
+atom :: Parser Tree
+atom = Atom <$> atom' <* whitespace <?> "atom"
+  where atom' = try $ do
+          c  <-        letter <|> oneOf "*+-./<=>?"
+          cs <- many $ letter <|> oneOf "*+-./<=>?" <|> digit
+          return (c:cs)
 
-list :: Parser Sugar
-list = List <$> Tok.parens lexer sugarList
+list :: Parser Tree
+list = List <$> parens (tree `sepBy` whitespace) <?> "list"
 
-string :: Parser Sugar
-string = String <$> Tok.stringLiteral lexer
+parens :: Parser a -> Parser a
+parens p = between open close p
+  where open  = char '(' <* whitespace
+        close = char ')' <* whitespace <?> "')'"
 
 wrap :: ParsecT String () Identity a -> ParsecT String () Identity a
-wrap p = Tok.whiteSpace lexer *> p <* Tok.whiteSpace lexer <* eof
-
-readSugar :: String -> Sugar
-readSugar s =
-  case parse (wrap sugar) "<stdin>" s of
-    Left _  -> error "; parse error"
-    Right x -> x
-
-readSugarFile :: SourceName -> String -> Sugar
-readSugarFile name s =
-  case parse (wrap $ List <$> sugarList) name s of
-    Left _  -> error "; parse error"
-    Right x -> x
+wrap p = whitespace *> p <* whitespace <* eof
