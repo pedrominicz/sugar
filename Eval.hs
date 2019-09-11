@@ -15,4 +15,3 @@ substitute x y (Var x')
   | otherwise = (Var x')
 substitute x y (App x' y') = App (substitute x y x') (substitute x y y')
 substitute x y (Lam x' y') = Lam x' (substitute x y y')
-substitute _ _ x = x
