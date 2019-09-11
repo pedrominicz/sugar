@@ -46,11 +46,7 @@ lambda = parens $ do
   pure (Lam (pure x) y)
 
 number :: Parser Sugar
-number = Num <$> try number'
-  where number' = do
-          sign   <- many (oneOf "+-")
-          digits <- many1 digit
-          pure $ read (sign ++ digits)
+number = Num . read <$> many1 digit
 
 parens :: Parser a -> Parser a
 parens p = try $ between open close (whitespace *> p <* whitespace)
