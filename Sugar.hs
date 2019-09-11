@@ -1,12 +1,14 @@
-module Sugar (Sugar(..)) where
+module Sugar (Sugar(..), Name) where
 
 import Text.Parsec
 import Text.Parsec.String (Parser)
 
+type Name = String
+
 data Sugar
-  = Var String
+  = Var Name
   | App Sugar Sugar
-  | Lam String Sugar
+  | Lam Name Sugar
   | Num Integer
 
 instance Show Sugar where
@@ -39,9 +41,8 @@ application = parens $ do
 
 lambda :: Parser Sugar
 lambda = parens $ do
-  char '\\' *> whitespace
   x <- oneOf ['a'..'z']
-  whitespace *> string "->" *> whitespace
+  whitespace *> char '.' *> whitespace
   y <- sugar
   pure (Lam (pure x) y)
 

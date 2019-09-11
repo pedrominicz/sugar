@@ -2,20 +2,17 @@ module Eval where
 
 import Sugar
 
-data Clojure
-  = Clojure Environment Sugar
-  deriving Show
+eval :: Sugar -> Sugar
+eval (App x y) =
+  case eval x of
+    Lam x' expr -> eval $ substitute x' y expr
+    x'          -> App x' y
+eval x = x
 
-type Environment = [(String, Clojure)]
-
-eval :: Environment -> Sugar -> Clojure
-eval env (Var x) =
-  case lookup x env of
-    Just (Clojure _ x') -> Clojure env x'
-    Nothing             -> Clojure env (Var x)
-eval env (App x y) = apply (eval env x) (eval env y)
-eval env x         = Clojure env x
-
-apply :: Clojure -> Clojure -> Clojure
-apply (Clojure env (Lam x body)) y = eval ((x,y):env) body
-apply _ _ = error "Eval.apply: first argument is not a lambda"
+substitute :: Name -> Sugar -> Sugar -> Sugar
+substitute x y (Var x')
+  | x == x'   = y
+  | otherwise = (Var x')
+substitute x y (App x' y') = App (substitute x y x') (substitute x y y')
+substitute x y (Lam x' y') = Lam x' (substitute x y y')
+substitute _ _ x = x
