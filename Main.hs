@@ -2,18 +2,17 @@ module Main where
 
 import Eval
 
-import System.IO
+import System.Console.Haskeline
 
-repl :: IO ()
-repl = do
-  input <- read <$> (putStr "> " >> getLine)
-  let input'   = substitute 's' (read "x.y.z.xz(yz)") input
-  let input''  = substitute 'k' (read "x.y.x") input'
-  let input''' = substitute 'i' (read "x.x") input''
-  putStrLn $ show $ eval input'''
-  repl
+repl :: Environment -> InputT IO ()
+repl env = do
+  maybeInput <- getInputLine "> "
+  case maybeInput of
+    Nothing    -> return ()
+    Just input -> do
+        let (Clojure env' result) = eval env $ read input
+        outputStrLn $ show result
+        repl env'
 
 main :: IO ()
-main = do
-  hSetBuffering stdout NoBuffering
-  repl
+main = runInputT defaultSettings (repl [])
