@@ -1,4 +1,7 @@
-module Sugar (Sugar(..), Name) where
+module Sugar
+  ( Sugar(..)
+  , Name
+  ) where
 
 import Text.Parsec
 import Text.Parsec.String (Parser)

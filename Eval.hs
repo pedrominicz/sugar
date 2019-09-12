@@ -5,8 +5,8 @@ import Sugar
 eval :: Sugar -> Sugar
 eval (App x y) =
   case eval x of
-    Lam x' expr -> eval $ substitute x' y expr
-    x'          -> App x' y
+    Lam x' y' -> eval $ substitute x' y y'
+    x'        -> App x' (eval y)
 eval x = x
 
 substitute :: Name -> Sugar -> Sugar -> Sugar
