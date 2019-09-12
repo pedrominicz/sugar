@@ -10,8 +10,10 @@ eval (App x y) =
 eval x = x
 
 substitute :: Name -> Sugar -> Sugar -> Sugar
-substitute x y (Var x')
+substitute x y a@(Var x')
   | x == x'   = y
-  | otherwise = (Var x')
+  | otherwise = a
 substitute x y (App x' y') = App (substitute x y x') (substitute x y y')
-substitute x y (Lam x' y') = Lam x' (substitute x y y')
+substitute x y a@(Lam x' y')
+  | x /= x'   = Lam x' (substitute x y y')
+  | otherwise = a

@@ -32,7 +32,7 @@ variable = Var <$> name
 
 application :: Parser Sugar
 application = (variable <|> parens sugar) `chainl1` application'
-  where application' = whitespace *> pure (App)
+  where application' = whitespace *> pure App
 
 lambda :: Parser Sugar
 lambda = try $ do

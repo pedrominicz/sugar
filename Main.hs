@@ -1,7 +1,8 @@
 module Main where
 
 import Eval
-import Sugar
+
+import System.IO
 
 repl :: IO ()
 repl = do
@@ -13,4 +14,6 @@ repl = do
   repl
 
 main :: IO ()
-main = repl
+main = do
+  hSetBuffering stdout NoBuffering
+  repl
