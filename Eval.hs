@@ -17,5 +17,5 @@ eval env (App x y) = apply (eval env x) (eval env y)
 eval env x         = Clojure env x
 
 apply :: Clojure -> Clojure -> Clojure
-apply (Clojure env (Lam x body)) y = eval ((x,y):env) body
-apply _ _ = error "Eval.apply: first argument is not a lambda"
+apply (Clojure env (Lam x body)) y  = eval ((x,y):env) body
+apply (Clojure env x) (Clojure _ y) = Clojure env (App x y)

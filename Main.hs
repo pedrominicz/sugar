@@ -4,15 +4,15 @@ import Eval
 
 import System.Console.Haskeline
 
-repl :: Environment -> InputT IO ()
-repl env = do
+repl :: InputT IO ()
+repl = do
   maybeInput <- getInputLine "> "
   case maybeInput of
     Nothing    -> return ()
     Just input -> do
-        let (Clojure env' result) = eval env $ read input
-        outputStrLn $ show result
-        repl env'
+      let (Clojure _ result) = eval [] $ read input
+      outputStrLn $ show result
+      repl
 
 main :: IO ()
-main = runInputT defaultSettings (repl [])
+main = runInputT defaultSettings repl

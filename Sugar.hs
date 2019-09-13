@@ -6,7 +6,7 @@ module Sugar
 import Text.Parsec
 import Text.Parsec.String (Parser)
 
-type Name = Char
+type Name = String
 
 data Sugar
   = Var Name
@@ -14,9 +14,9 @@ data Sugar
   | Lam Name Sugar
 
 instance Show Sugar where
-  show (Var x)   = pure x
+  show (Var x)   = x
   show (App x y) = "(" ++ show x ++ " " ++ show y ++ ")"
-  show (Lam x y) = "(" ++ pure x ++ "." ++ show y ++ ")"
+  show (Lam x y) = "(" ++ x ++ "." ++ show y ++ ")"
 
 instance Read Sugar where
   readsPrec _ =
@@ -45,15 +45,19 @@ lambda = try $ do
   pure (Lam x y)
 
 name :: Parser Name
-name = oneOf ['a'..'z']
+name = try $ do
+  c  <- letter
+  cs <- many alphaNum
+  whitespace
+  pure (c:cs)
 
 parens :: Parser a -> Parser a
 parens p = try $ between open close (whitespace *> p <* whitespace)
   where open  = char '('
-        close = char ')' <?> "')'"
+        close = char ')'
 
 whitespace :: Parser ()
-whitespace = skipMany (skipMany1 space <|> comment <?> "")
+whitespace = skipMany (skipMany1 space <|> comment)
   where comment = do
           _ <- try $ char '#'
           skipMany (satisfy (/= '\n'))
