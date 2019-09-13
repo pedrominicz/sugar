@@ -20,7 +20,7 @@ instance Show Sugar where
 
 instance Read Sugar where
   readsPrec _ =
-    \s -> case parse (whitespace *> sugar <* whitespace <* eof) "" s of
+    \s -> case parse (whitespace *> sugar <* eof) "" s of
       Left e  -> error $ show e
       Right x -> [(x, "")]
 
@@ -35,12 +35,12 @@ variable = Var <$> name
 
 application :: Parser Sugar
 application = (variable <|> parens sugar) `chainl1` application'
-  where application' = whitespace *> pure App
+  where application' = pure App <* whitespace
 
 lambda :: Parser Sugar
 lambda = try $ do
   x <- name
-  whitespace *> char '.' *> whitespace
+  char '.' *> whitespace
   y <- sugar
   pure (Lam x y)
 
@@ -52,9 +52,9 @@ name = try $ do
   pure (c:cs)
 
 parens :: Parser a -> Parser a
-parens p = try $ between open close (whitespace *> p <* whitespace)
-  where open  = char '('
-        close = char ')'
+parens p = try $ between open close p
+  where open  = char '(' <* whitespace
+        close = char ')' <* whitespace
 
 whitespace :: Parser ()
 whitespace = skipMany (skipMany1 space <|> comment)
