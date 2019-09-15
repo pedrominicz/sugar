@@ -34,8 +34,7 @@ variable :: Parser Sugar
 variable = Var <$> name
 
 application :: Parser Sugar
-application = (variable <|> parens sugar) `chainl1` application'
-  where application' = pure App <* whitespace
+application = (variable <|> parens sugar) `chainl1` pure App
 
 lambda :: Parser Sugar
 lambda = try $ do
