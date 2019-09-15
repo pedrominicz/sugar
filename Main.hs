@@ -10,7 +10,7 @@ repl = do
   case maybeInput of
     Nothing    -> return ()
     Just input -> do
-      let (Clojure _ result) = eval [] $ read input
+      let (Closure _ result) = eval [] $ read input
       outputStrLn $ show result
       repl
 
