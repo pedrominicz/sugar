@@ -5,7 +5,7 @@ module Parser
 import Expr
 
 import Control.Monad.Reader
-import Data.List
+import Data.List (elemIndex)
 import Text.Parsec
 
 type Parser = ParsecT String () (Reader [String])

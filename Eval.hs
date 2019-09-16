@@ -1,21 +1,31 @@
 module Eval where
 
-import Sugar
+import Expr
+import Parser
 
-data Closure
-  = Closure Environment Sugar
-  deriving Show
+import Safe (atMay)
 
-type Environment = [(Name, Closure)]
+data Value
+  = Closure [Value] Expr
+  | Number Integer
+  | Boolean Bool
 
-eval :: Environment -> Sugar -> Closure
-eval env (Var x) =
-  case lookup x env of
-    Just (Closure _ x') -> Closure env x'
-    Nothing             -> Closure env (Var x)
-eval env (App x y) = apply (eval env x) (eval env y)
-eval env x         = Closure env x
+instance Show Value where
+  show (Closure _ _) = "<closure>"
+  show (Number x)    = show x
+  show (Boolean x)   = show x
 
-apply :: Closure -> Closure -> Closure
-apply (Closure env (Lam x body)) y  = eval ((x,y):env) body
-apply (Closure env x) (Closure _ y) = Closure env (App x y)
+eval :: [Value] -> Expr -> Maybe Value
+eval env (Ref x)   = atMay env x
+eval env (Lam t x) = Just $ Closure env (Lam t x)
+eval env (App x y) = do
+  x' <- eval env x
+  y' <- eval env y
+  apply x' y'
+eval _ (Num x)     = Just $ Number x
+eval _ (Bool x)    = Just $ Boolean x
+eval _ _           = Nothing
+
+apply :: Value -> Value -> Maybe Value
+apply (Closure env (Lam _ body)) x = eval (x:env) body
+apply _ _                          = Nothing
