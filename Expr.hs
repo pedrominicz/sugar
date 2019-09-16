@@ -24,8 +24,9 @@ instance Show Type where
   show x = showType 0 x
 
 vars :: [String]
-vars = [[c] | c <- cs] ++ [c:show n | n <- [1..], c <- cs]
-  where cs = ['a'..'z']
+vars = [c:show' n | n <- [0..], c <- ['a'..'z']]
+  where show' 0 = ""
+        show' x = show x
 
 showExpr :: Int -> Expr -> String
 showExpr n (Ref x)
@@ -35,12 +36,13 @@ showExpr _ (Global x) = x
 showExpr n (App x y)  = "(" ++ x' ++ " " ++ y' ++ ")"
   where x' = showExpr n x
         y' = showExpr n y
-showExpr n (Lam t x)  = "(λ" ++ arg ++ ":" ++ t' ++ "." ++ x' ++ ")"
+--showExpr n (Lam t x)  = "(λ" ++ arg ++ ":" ++ t' ++ "." ++ x' ++ ")"
+showExpr n (Lam _ x)  = "(λ" ++ arg ++ "." ++ x' ++ ")"
   where arg = vars !! n
-        t'  = showType 0 t
+        --t'  = showType 0 t
         x'  = showExpr (n + 1) x
 showExpr _ (Num x)    = show x
-showExpr _ (Bool x)   = show x
+showExpr _ (Bool x)   = if x then "true" else "false"
 
 showType :: Int -> Type -> String
 showType 0 (LamT x y) = showType 1 x ++ " -> " ++ showType 0 y

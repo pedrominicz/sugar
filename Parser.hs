@@ -19,19 +19,10 @@ parseExpr s =
 expression :: Parser Expr
 expression = lambda
          <|> application
+         <|> boolean
          <|> variable
+         <|> number
          <|> parens expression
-
-variable :: Parser Expr
-variable = do
-  x   <- name
-  env <- ask
-  case elemIndex x env of
-    Just x' -> pure $ Ref x'
-    Nothing -> pure $ Global x
-
-application :: Parser Expr
-application = (variable <|> parens expression) `chainl1` pure App
 
 lambda :: Parser Expr
 lambda = try $ do
@@ -40,20 +31,50 @@ lambda = try $ do
   y <- local (x:) expression
   pure (Lam NumT y)
 
+application :: Parser Expr
+application = expression' `chainl1` pure App
+  where expression' = boolean
+                  <|> variable
+                  <|> number
+                  <|> parens expression
+
+boolean :: Parser Expr
+boolean = try $ do
+  x <- name
+  case x of
+    "true"  -> pure $ Bool True
+    "false" -> pure $ Bool False
+    _       -> unexpected x
+
+variable :: Parser Expr
+variable = do
+  x   <- name
+  env <- ask
+  case elemIndex x env of
+    Just i  -> pure $ Ref i
+    Nothing -> pure $ Global x
+
+number :: Parser Expr
+number = Num <$> do
+  sign   <- option ' ' (char '-')
+  digits <- many1 digit
+  whitespace
+  pure $ read (sign:digits)
+
 name :: Parser String
-name = try $ do
+name = do
   c  <- letter
   cs <- many alphaNum
   whitespace
   pure (c:cs)
 
 parens :: Parser a -> Parser a
-parens p = try $ between open close p
+parens p = between open close p
   where open  = char '(' <* whitespace
         close = char ')' <* whitespace
 
 whitespace :: Parser ()
 whitespace = skipMany (skipMany1 space <|> comment)
-  where comment = do
-          _ <- try $ char '#'
+  where comment = try $ do
+          _ <- char '#'
           skipMany (satisfy (/= '\n'))
