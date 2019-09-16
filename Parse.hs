@@ -26,6 +26,7 @@ expression = lambda
 
 lambda :: Parser Expr
 lambda = try $ do
+  optional $ char 'λ' *> whitespace
   x <- name
   char ':' *> whitespace
   t <- lambdaType
