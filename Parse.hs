@@ -1,4 +1,4 @@
-module Parser
+module Parse
   ( parseExpr
   ) where
 
@@ -28,8 +28,18 @@ lambda :: Parser Expr
 lambda = try $ do
   x <- name
   char '.' *> whitespace
+  t <- lambdaType
+  char ':' *> whitespace
   y <- local (x:) expression
-  pure (Lam NumT y)
+  pure (Lam t y)
+
+lambdaType :: Parser Type
+lambdaType = ty `chainr1` arrow
+  where ty = reserved "Num" NumT
+         <|> reserved "Bool" BoolT
+         <|> parens lambdaType
+
+        arrow = pure LamT <* string "->" <* whitespace
 
 application :: Parser Expr
 application = expression' `chainl1` pure App
@@ -39,12 +49,7 @@ application = expression' `chainl1` pure App
                   <|> parens expression
 
 boolean :: Parser Expr
-boolean = try $ do
-  x <- name
-  case x of
-    "true"  -> pure $ Bool True
-    "false" -> pure $ Bool False
-    _       -> unexpected x
+boolean = Bool <$> (reserved "true" True <|> reserved "false" False)
 
 variable :: Parser Expr
 variable = do
@@ -67,6 +72,13 @@ name = do
   cs <- many alphaNum
   whitespace
   pure (c:cs)
+
+reserved :: String -> a -> Parser a
+reserved s x = try $ do
+  s' <- name
+  if s == s'
+    then pure x
+    else unexpected s'
 
 parens :: Parser a -> Parser a
 parens p = between open close p
