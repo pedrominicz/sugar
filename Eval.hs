@@ -1,7 +1,6 @@
-module Eval where
+module Eval (Value, eval) where
 
 import Expr
-import Parser
 
 import Safe (atMay)
 
