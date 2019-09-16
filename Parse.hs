@@ -10,11 +10,11 @@ import Text.Parsec
 
 type Parser = ParsecT String () (Reader [String])
 
-parseExpr :: String -> Expr
+parseExpr :: String -> Maybe Expr
 parseExpr s =
   case runReader (runParserT (whitespace *> expression <* eof) () "" s) [] of
-    Left e  -> error $ show e
-    Right x -> x
+    Left _  -> Nothing
+    Right x -> Just x
 
 expression :: Parser Expr
 expression = lambda
@@ -27,9 +27,9 @@ expression = lambda
 lambda :: Parser Expr
 lambda = try $ do
   x <- name
-  char '.' *> whitespace
-  t <- lambdaType
   char ':' *> whitespace
+  t <- lambdaType
+  char '.' *> whitespace
   y <- local (x:) expression
   pure (Lam t y)
 

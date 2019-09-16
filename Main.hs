@@ -1,7 +1,8 @@
 module Main where
 
+import Check
 import Eval
-import Parser
+import Parse
 
 import System.Console.Haskeline
 
@@ -11,9 +12,9 @@ repl = do
   case maybeInput of
     Nothing    -> pure ()
     Just input -> do
-      outputStrLn $ case eval [] $ parseExpr input of
-        Just result -> show result
-        Nothing     -> "invalid expression"
+      case parseExpr input >>= (check [] >> eval []) of
+        Just result -> outputStrLn $ show result
+        Nothing     -> outputStrLn "invalid expression"
       repl
 
 main :: IO ()
