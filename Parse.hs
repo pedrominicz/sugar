@@ -1,20 +1,31 @@
 module Parse
-  ( parseExpr
+  ( parse
   ) where
 
 import Expr
 
 import Control.Monad.Reader
 import Data.List (elemIndex)
-import Text.Parsec
+import Text.Parsec hiding (parse)
 
 type Parser = ParsecT String () (Reader [String])
 
-parseExpr :: String -> Maybe Expr
-parseExpr s =
-  case runReader (runParserT (whitespace *> expression <* eof) () "" s) [] of
+parse :: String -> Maybe Statement
+parse s =
+  case runReader (runParserT (whitespace *> statement <* eof) () "" s) [] of
     Left _  -> Nothing
     Right x -> Just x
+
+statement :: Parser Statement
+statement = letExpr
+        <|> Expr <$> expression
+
+letExpr :: Parser Statement
+letExpr = try $ do
+  x <- name
+  char '=' *> whitespace
+  expr <- expression
+  pure $ Let x expr
 
 expression :: Parser Expr
 expression = lambda

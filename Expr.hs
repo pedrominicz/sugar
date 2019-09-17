@@ -1,7 +1,12 @@
 module Expr
-  ( Expr(..)
+  ( Statement(..)
+  , Expr(..)
   , Type(..)
   ) where
+
+data Statement
+  = Let String Expr
+  | Expr Expr
 
 data Expr
   = Ref Int
