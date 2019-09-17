@@ -2,9 +2,17 @@ module Main where
 
 import Check
 import Eval
+import Expr
 import Parse
 
 import System.Console.Haskeline
+
+evalInput :: String -> Maybe (Value, Type)
+evalInput input = do
+  expr   <- parseExpr input
+  ty     <- check [] expr
+  result <- eval [] expr
+  pure (result, ty)
 
 repl :: InputT IO ()
 repl = do
@@ -12,9 +20,9 @@ repl = do
   case maybeInput of
     Nothing    -> pure ()
     Just input -> do
-      case parseExpr input >>= (check [] >> eval []) of
-        Just result -> outputStrLn $ show result
-        Nothing     -> outputStrLn "invalid expression"
+      case evalInput input of
+        Just (result, ty) -> outputStrLn $ show result ++ " : " ++ show ty
+        Nothing           -> outputStrLn "invalid expression"
       repl
 
 main :: IO ()

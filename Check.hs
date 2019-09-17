@@ -1,4 +1,6 @@
-module Check where
+module Check
+  ( check
+  ) where
 
 import Expr
 

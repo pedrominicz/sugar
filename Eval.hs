@@ -1,4 +1,7 @@
-module Eval (Value, eval) where
+module Eval
+  ( Value
+  , eval
+  ) where
 
 import Expr
 
