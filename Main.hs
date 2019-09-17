@@ -7,7 +7,7 @@ import Parse
 
 import System.Console.Haskeline
 
-evalInput :: String -> Maybe (Value, Type)
+evalInput :: String -> Maybe (Expr, Type)
 evalInput input = do
   expr   <- parseExpr input
   ty     <- check [] expr

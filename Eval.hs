@@ -1,33 +1,22 @@
 module Eval
-  ( Value
-  , eval
+  ( eval
   ) where
 
 import Expr
 
-import Safe (atMay)
+eval :: [(String, Expr)] -> Expr -> Maybe Expr
+eval _ (Ref _)      = Nothing
+eval env (Global x) = lookup x env
+eval env (App x x') =
+  case eval env x of
+    Just (Lam _ body) -> eval env $ substitute 0 x' body
+    _                 -> Nothing
+eval _ x            = Just x
 
-data Value
-  = Closure [Value] Expr
-  | Number Integer
-  | Boolean Bool
-
-instance Show Value where
-  show (Closure _ _) = "<closure>"
-  show (Number x)    = show x
-  show (Boolean x)   = if x then "true" else "false"
-
-eval :: [Value] -> Expr -> Maybe Value
-eval env (Ref x)   = atMay env x
-eval env (Lam t x) = Just $ Closure env (Lam t x)
-eval env (App x y) = do
-  x' <- eval env x
-  y' <- eval env y
-  apply x' y'
-eval _ (Num x)     = Just $ Number x
-eval _ (Bool x)    = Just $ Boolean x
-eval _ _           = Nothing
-
-apply :: Value -> Value -> Maybe Value
-apply (Closure env (Lam _ body)) x = eval (x:env) body
-apply _ _                          = Nothing
+substitute :: Int -> Expr -> Expr -> Expr
+substitute i x (Ref i')
+  | i == i' = x
+  | i < i'  = Ref (i' - 1)
+substitute i x (Lam t body) = Lam t (substitute (i + 1) x body)
+substitute i x (App x' y')  = App (substitute i x x') (substitute i x y')
+substitute _ _ x            = x
