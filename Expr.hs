@@ -1,8 +1,11 @@
 module Expr
-  ( Statement(..)
+  ( Name
+  , Statement(..)
   , Expr(..)
   , Type(..)
   ) where
+
+type Name = String
 
 data Statement
   = Let String Expr
@@ -26,7 +29,7 @@ data Type
   deriving Eq
 
 instance Show Type where
-  show x = showType 0 x
+  show x = showType False x
 
 vars :: [String]
 vars = [c:show' n | n <- [0..], c <- ['a'..'z']]
@@ -43,15 +46,16 @@ showExpr n (App x y)  = "(" ++ x' ++ " " ++ y' ++ ")"
         y' = showExpr n y
 showExpr n (Lam t x)  = "(λ" ++ arg ++ ":" ++ t' ++ "." ++ x' ++ ")"
   where arg = vars !! n
-        t'  = showType 0 t
+        t'  = showType False t
         x'  = showExpr (n + 1) x
 showExpr _ (Num x)    = show x
 showExpr _ (Bool x)   = if x then "true" else "false"
 
-showType :: Int -> Type -> String
-showType 0 (LamT x y) = showType 1 x ++ " -> " ++ showType 0 y
-showType n (LamT x y) = "(" ++ x' ++ " -> " ++ y' ++ ")"
-  where x' = showType (n + 1) x
-        y' = showType n y
+showType :: Bool -> Type -> String
+showType left (LamT x y)
+  | left      = "(" ++ x' ++ " -> " ++ y' ++ ")"
+  | otherwise =        x' ++ " -> " ++ y'
+  where x' = showType True x
+        y' = showType False y
 showType _ NumT       = "Num"
 showType _ BoolT      = "Bool"

@@ -78,7 +78,7 @@ number = Num <$> do
   whitespace
   pure $ read (sign:digits)
 
-name :: Parser String
+name :: Parser Name
 name = do
   c  <- letter
   cs <- many alphaNum
