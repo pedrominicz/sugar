@@ -1,10 +1,15 @@
 module Expr
   ( Name
   , Expr(..)
+  , Statement(..)
   , Type(..)
   ) where
 
 type Name = String
+
+data Statement
+  = Let' Name Expr
+  | Expr Expr
 
 data Expr
   = Ref Int

@@ -12,14 +12,27 @@ import Text.Parsec hiding (parse)
 
 type Parser = ParsecT String () (Reader [Name])
 
-parse :: String -> Except String Expr
+parse :: String -> Except String Statement
 parse s =
-  case runReader (runParserT (whitespace *> expression <* eof) () "" s) [] of
+  case runReader (runParserT (whitespace *> statement <* eof) () "" s) [] of
     Left e  -> throwError $ show e
     Right x -> return $ x
 
 isReserved :: Name -> Bool
-isReserved = flip elem ["let", "in", "Num", "Bool", "true", "false"]
+isReserved x = elem x ["let", "in", "Num", "Bool", "true", "false"]
+
+statement :: Parser Statement
+statement = Expr <$> letExpr
+        <|> letStatement
+        <|> Expr <$> expression
+
+letStatement :: Parser Statement
+letStatement = try $ do
+  reserved "let" ()
+  x <- name
+  char '=' *> whitespace
+  e <- expression
+  return $ Let' x e
 
 expression :: Parser Expr
 expression = letExpr
@@ -38,7 +51,7 @@ letExpr = try $ do
   e <- expression
   reserved "in" ()
   y <- local (x:) expression
-  return (Let e y)
+  return $ Let e y
 
 lambda :: Parser Expr
 lambda = try $ do
@@ -47,7 +60,7 @@ lambda = try $ do
   t <- maybeType
   char '.' *> whitespace
   y <- local (x:) expression
-  return (Lam t y)
+  return $ Lam t y
 
 maybeType :: Parser (Maybe Type)
 maybeType = optionMaybe $ do
@@ -86,7 +99,7 @@ number = do
   sign   <- option ' ' (char '-')
   digits <- many1 digit
   whitespace
-  return $ Num $ read (sign:digits)
+  return $ Num (read (sign:digits))
 
 name :: Parser String
 name = do
