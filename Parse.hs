@@ -3,6 +3,7 @@ module Parse
   ) where
 
 import Expr
+import Type
 
 import Control.Monad.Except
 import Control.Monad.Reader
