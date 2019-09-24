@@ -4,46 +4,56 @@ module Parse
 
 import Expr
 
+import Control.Monad.Except
 import Control.Monad.Reader
+
 import Data.List (elemIndex)
 import Text.Parsec hiding (parse)
 
-type Parser = ParsecT String () (Reader [String])
+type Parser = ParsecT String () (Reader [Name])
 
-parse :: String -> Maybe Statement
+parse :: String -> Except String Expr
 parse s =
-  case runReader (runParserT (whitespace *> statement <* eof) () "" s) [] of
-    Left _  -> Nothing
-    Right x -> Just x
+  case runReader (runParserT (whitespace *> expression <* eof) () "" s) [] of
+    Left e  -> throwError $ show e
+    Right x -> return $ x
 
-statement :: Parser Statement
-statement = letExpr
-        <|> Expr <$> expression
-
-letExpr :: Parser Statement
-letExpr = try $ do
-  x <- name
-  char '=' *> whitespace
-  expr <- expression
-  pure $ Let x expr
+isReserved :: Name -> Bool
+isReserved = flip elem ["let", "in", "Num", "Bool", "true", "false"]
 
 expression :: Parser Expr
-expression = lambda
+expression = letExpr
+         <|> lambda
          <|> application
          <|> boolean
          <|> variable
          <|> number
          <|> parens expression
 
+letExpr :: Parser Expr
+letExpr = try $ do
+  reserved "let" ()
+  x <- name
+  char '=' *> whitespace
+  e <- expression
+  reserved "in" ()
+  y <- local (x:) expression
+  return (Let e y)
+
 lambda :: Parser Expr
 lambda = try $ do
   optional $ char 'λ' *> whitespace
   x <- name
-  char ':' *> whitespace
-  t <- lambdaType
+  t <- maybeType
   char '.' *> whitespace
   y <- local (x:) expression
-  pure (Lam t y)
+  return (Lam t y)
+
+maybeType :: Parser (Maybe Type)
+maybeType = optionMaybe $ do
+  char ':' *> whitespace
+  t <- lambdaType
+  return t
 
 lambdaType :: Parser Type
 lambdaType = ty `chainr1` arrow
@@ -51,10 +61,10 @@ lambdaType = ty `chainr1` arrow
          <|> reserved "Bool" BoolT
          <|> parens lambdaType
 
-        arrow = pure LamT <* string "->" <* whitespace
+        arrow = return LamT <* string "->" <* whitespace
 
 application :: Parser Expr
-application = expression' `chainl1` pure App
+application = try $ expression' `chainl1` return App
   where expression' = boolean
                   <|> variable
                   <|> number
@@ -68,29 +78,30 @@ variable = do
   x   <- name
   env <- ask
   case elemIndex x env of
-    Just i  -> pure $ Ref i
-    Nothing -> pure $ Global x
+    Just i  -> return $ Ref i
+    Nothing -> return $ Global x
 
 number :: Parser Expr
-number = Num <$> do
+number = do
   sign   <- option ' ' (char '-')
   digits <- many1 digit
   whitespace
-  pure $ read (sign:digits)
+  return $ Num $ read (sign:digits)
 
-name :: Parser Name
+name :: Parser String
 name = do
   c  <- letter
   cs <- many alphaNum
   whitespace
-  pure (c:cs)
+  let s = c:cs
+  if isReserved s
+    then unexpected s
+    else return s
 
 reserved :: String -> a -> Parser a
 reserved s x = try $ do
-  s' <- name
-  if s == s'
-    then pure x
-    else unexpected s'
+  string s *> notFollowedBy alphaNum *> whitespace
+  return x
 
 parens :: Parser a -> Parser a
 parens p = between open close p
