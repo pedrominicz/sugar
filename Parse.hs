@@ -38,6 +38,9 @@ letStatement = try $ do
 expression :: Parser Expr
 expression = letExpr
          <|> lambda
+         <|> addExpr
+         <|> mulExpr
+         <|> compareExpr
          <|> application
          <|> boolean
          <|> variable
@@ -76,6 +79,52 @@ lambdaType = ty `chainr1` arrow
          <|> parens lambdaType
 
         arrow = return LamT <* string "->" <* whitespace
+
+compareExpr :: Parser Expr
+compareExpr = try $ operator <*> expression' <*> expression'
+  where expression' = application
+                  <|> boolean
+                  <|> variable
+                  <|> number
+                  <|> parens expression
+
+        operator = choice
+          [ Op Less     <$ char '<'
+          , Op LessE    <$ try (string "<=")
+          , Op Greater  <$ char '>'
+          , Op GreaterE <$ try (string ">=")
+          , Op Equals   <$ try (string "==")
+          ] <* whitespace
+
+addExpr :: Parser Expr
+addExpr = try $ expression' `chainl1` operator
+  where expression' = mulExpr
+                  <|> compareExpr
+                  <|> application
+                  <|> boolean
+                  <|> variable
+                  <|> number
+                  <|> parens expression
+
+        operator = choice
+          [ Op Add <$ char '+'
+          , Op Sub <$ char '-'
+          ] <* whitespace
+
+mulExpr :: Parser Expr
+mulExpr = try $ expression' `chainl1` operator
+  where expression' = compareExpr
+                  <|> application
+                  <|> boolean
+                  <|> variable
+                  <|> number
+                  <|> parens expression
+
+        operator = choice
+          [ Op Mul <$ char '*'
+          , Op Div <$ char '/'
+          , Op Mod <$ char '%'
+          ] <* whitespace
 
 application :: Parser Expr
 application = try $ expression' `chainl1` return App

@@ -1,7 +1,8 @@
 module Expr
   ( Name
-  , Expr(..)
   , Statement(..)
+  , Expr(..)
+  , Op(..)
   ) where
 
 import Type
@@ -18,7 +19,21 @@ data Expr
   | Global Name
   | Lam (Maybe Type) Expr
   | App Expr Expr
+  | Let Expr Expr
   | Num Integer
   | Bool Bool
-  | Let Expr Expr
+  | Op Op Expr Expr
+  deriving Show
+
+data Op
+  = Add
+  | Sub
+  | Mul
+  | Div
+  | Mod
+  | Less
+  | LessE
+  | Greater
+  | GreaterE
+  | Equals
   deriving Show
