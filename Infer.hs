@@ -55,12 +55,25 @@ infer' env (App x y) = do
   tx `unify` LamT ty t
   return t
 
-infer' _ (Num _)  = return NumT
-infer' _ (Bool _) = return BoolT
-
 infer' env (Let x y) = do
   t <- generalize env <$> infer' env x
   infer' (t:env) y
+
+infer' _ (Num _)  = return NumT
+infer' _ (Bool _) = return BoolT
+
+infer' env (Op op x y) = do
+  tx <- infer' env x
+  ty <- infer' env y
+  tx `unify` NumT
+  ty `unify` NumT
+  return $ case op of
+    Add -> NumT
+    Sub -> NumT
+    Mul -> NumT
+    Div -> NumT
+    Mod -> NumT
+    _   -> BoolT
 
 instantiate :: Scheme -> Infer Type
 instantiate (Forall xs x) = do
