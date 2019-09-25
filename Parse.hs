@@ -40,12 +40,12 @@ expression :: Parser Expr
 expression = letExpr
          <|> ifExpr
          <|> lambda
+         <|> compareExpr
          <|> addExpr
          <|> mulExpr
-         <|> compareExpr
          <|> application
-         <|> boolean
          <|> variable
+         <|> boolean
          <|> number
          <|> parens expression
 
@@ -94,9 +94,11 @@ lambdaType = ty `chainr1` arrow
 
 compareExpr :: Parser Expr
 compareExpr = try $ expression' `chainl1` operator
-  where expression' = application
-                  <|> boolean
+  where expression' = addExpr
+                  <|> mulExpr
+                  <|> application
                   <|> variable
+                  <|> boolean
                   <|> number
                   <|> parens expression
 
@@ -111,10 +113,9 @@ compareExpr = try $ expression' `chainl1` operator
 addExpr :: Parser Expr
 addExpr = try $ expression' `chainl1` operator
   where expression' = mulExpr
-                  <|> compareExpr
                   <|> application
-                  <|> boolean
                   <|> variable
+                  <|> boolean
                   <|> number
                   <|> parens expression
 
@@ -125,10 +126,9 @@ addExpr = try $ expression' `chainl1` operator
 
 mulExpr :: Parser Expr
 mulExpr = try $ expression' `chainl1` operator
-  where expression' = compareExpr
-                  <|> application
-                  <|> boolean
+  where expression' = application
                   <|> variable
+                  <|> boolean
                   <|> number
                   <|> parens expression
 
@@ -140,8 +140,8 @@ mulExpr = try $ expression' `chainl1` operator
 
 application :: Parser Expr
 application = try $ expression' `chainl1` return App
-  where expression' = boolean
-                  <|> variable
+  where expression' = variable
+                  <|> boolean
                   <|> number
                   <|> parens expression
 
@@ -164,7 +164,7 @@ number = do
   return $ Num (read (sign:digits))
 
 name :: Parser String
-name = do
+name = try $ do
   c  <- letter
   cs <- many alphaNum
   whitespace
