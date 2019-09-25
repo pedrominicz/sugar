@@ -1,45 +1,64 @@
 module Main where
 
-import Check
 import Eval
 import Expr
+import Infer
 import Parse
+import Type
+import Value
 
+import Control.Monad.Except
 import Control.Monad.State
+import Control.Monad.Trans.Maybe
+
 import Data.Char (isSpace)
+
 import System.Console.Haskeline
 
-runExpr :: Expr -> StateT Environment Maybe (Expr, Type)
-runExpr expr = do
-  ty     <- check expr
-  result <- eval expr
-  return (result, ty)
+type Sugar a = MaybeT (StateT Environment (InputT IO)) a
 
-repl :: Environment -> InputT IO ()
-repl env = do
-  maybeInput <- getInputLine "> "
-  case maybeInput of
-    Nothing                  -> return ()
-    Just input | blank input -> repl env
-    Just input -> do
-      case parse input of
-        Just (Expr expr) -> do
-          case evalStateT (runExpr expr) env of
-            Just (result, ty) -> outputStrLn $ show result ++ " # " ++ show ty
-            Nothing           -> outputStrLn "# invalid expression"
-          repl env
-        Just (Let x expr) -> do
-          case evalStateT (runExpr expr) env of
-            Just (expr', _) -> repl $ (x, expr'):env
-            Nothing         -> do
-              outputStrLn "# invalid expression"
-              repl env
-        Nothing -> do
-          outputStrLn "# parse error"
-          repl env
+runSugar :: Sugar () -> InputT IO ()
+runSugar x = do
+  _ <- flip evalStateT [] $ runMaybeT x
+  return ()
 
-blank :: String -> Bool
-blank = (== "") . dropWhile isSpace
+readInput :: String -> Sugar String
+readInput prompt = do
+  maybeInput <- lift . lift $ getInputLine prompt
+  case dropWhile isSpace <$> maybeInput of
+    Nothing    -> mzero
+    Just ""    -> readInput prompt
+    Just input -> return input
+
+runStatement :: Statement -> Sugar ()
+runStatement (Let' x expr) = do
+  env <- get
+  case runExcept (evalStateT (infer expr) env) of
+    Left e  -> lift . lift $ outputStrLn e
+    Right scheme@(Forall _ t) ->
+      case runExcept (evalStateT (eval expr) env) of
+        Left e -> lift . lift $ outputStrLn e
+        Right result -> do
+          put $ (x, (scheme, result)):env
+          lift . lift $ outputStrLn $ x ++ " : " ++ show t
+
+runStatement (Expr expr) = do
+  env <- get
+  case runExcept (evalStateT (infer expr) env) of
+    Left e  -> lift . lift $ outputStrLn e
+    Right (Forall _ t) ->
+      case runExcept (evalStateT (eval expr) env) of
+        Left e              -> lift . lift $ outputStrLn e
+        Right (Closure _ _) -> lift . lift $ outputStrLn $ show t
+        Right result        -> lift . lift $ outputStrLn $ show result
+
+repl :: Sugar ()
+repl = do
+  input <- readInput "> "
+  case runExcept (parse input) of
+    Left e          -> lift . lift $ outputStrLn e
+    Right statement -> runStatement statement
+  repl
 
 main :: IO ()
-main = runInputT defaultSettings (repl [])
+main = runInputT defaultSettings (runSugar repl)

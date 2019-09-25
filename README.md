@@ -15,3 +15,7 @@ https://gist.github.com/pedrominicz/bd263fc79f2d6e317de66d422876e5ae (Unificatio
 https://gist.github.com/pedrominicz/2d8e6d13e829b72e739a7a386eb58417 (Type inference for Lambda Calculus without let generalization)
 
 https://gist.github.com/pedrominicz/4cd39439a17111adc0fda9696eb2e6e5 (Type inference for Lambda Calculus with let generalization, i.e. Hindley-Milner type inference)
+
+https://github.com/goldfirere/glambda/blob/master/src/Language/Glambda/Monad.hs
+
+https://github.com/goldfirere/glambda/blob/master/src/Language/Glambda/Repl.hs
