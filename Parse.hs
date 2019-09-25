@@ -81,7 +81,7 @@ lambdaType = ty `chainr1` arrow
         arrow = return LamT <* string "->" <* whitespace
 
 compareExpr :: Parser Expr
-compareExpr = try $ operator <*> expression' <*> expression'
+compareExpr = try $ expression' `chainl1` operator
   where expression' = application
                   <|> boolean
                   <|> variable
