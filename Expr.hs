@@ -3,6 +3,7 @@ module Expr
   , Statement(..)
   , Expr(..)
   , Op(..)
+  , opType
   ) where
 
 import Type
@@ -24,6 +25,7 @@ data Expr
   | Bool Bool
   | Op Op Expr Expr
   | If Expr Expr Expr
+  | Fix Expr
   deriving Show
 
 data Op
@@ -38,3 +40,11 @@ data Op
   | GreaterE
   | Equals
   deriving Show
+
+opType :: Op -> Type
+opType Add = NumT
+opType Sub = NumT
+opType Mul = NumT
+opType Div = NumT
+opType Mod = NumT
+opType _   = BoolT

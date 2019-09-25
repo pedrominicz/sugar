@@ -33,8 +33,8 @@ letStatement = try $ do
   reserved "let" ()
   x <- name
   char '=' *> whitespace
-  e <- expression
-  return $ Let' x e
+  e <- local (x:) expression
+  return $ Let' x (Fix (Lam Nothing e))
 
 expression :: Parser Expr
 expression = letExpr
@@ -54,10 +54,10 @@ letExpr = try $ do
   reserved "let" ()
   x <- name
   char '=' *> whitespace
-  e <- expression
+  e <- local (x:) expression
   reserved "in" ()
   y <- local (x:) expression
-  return $ Let e y
+  return $ Let (Fix (Lam Nothing e)) y
 
 ifExpr :: Parser Expr
 ifExpr = try $ do

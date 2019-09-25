@@ -6,33 +6,33 @@ import Expr
 import Value
 
 import Control.Monad.Except
-import Control.Monad.State
+import Control.Monad.Reader
+
+import qualified Data.Map as M
 
 import Safe (atMay)
 
-eval :: Expr -> StateT Environment (Except String) Value
+eval :: Expr -> ReaderT Environment (Except String) Value
 eval = eval' []
 
-eval' :: [Value] -> Expr -> StateT Environment (Except String) Value
+eval' :: [Value] -> Expr -> ReaderT Environment (Except String) Value
 eval' env (Ref x) =
   case atMay env x of
     Just x' -> return x'
-    Nothing -> error $ "Eval.eval': unbound reference: " ++ show x
+    Nothing -> error $ "Eval.eval': unbound reference"
 eval' _ (Global x) = do
-  env <- get
-  case lookup x env of
-    Just (_, x') -> return x'
+  env <- ask
+  case M.lookup x env of
+    Just (x', _) -> return x'
     Nothing      -> error $ "Eval.eval': unbound variable: " ++ x
 eval' env (Lam _ x) = return $ Closure env (Lam Nothing x)
 eval' env (App x y) = do
   x' <- eval' env x
   y' <- eval' env y
   apply x' y'
-eval' env (Let e x) = do
-  e' <- eval' env e
-  apply (Closure env (Lam Nothing x)) e'
-eval' _ (Num x)  = return $ Number x
-eval' _ (Bool x) = return $ Boolean x
+eval' env (Let x y) = eval' env (App (Lam Nothing y) x)
+eval' _ (Num x)     = return $ Number x
+eval' _ (Bool x)    = return $ Boolean x
 eval' env (Op op x y) = do
   x' <- eval' env x
   y' <- eval' env y
@@ -43,9 +43,13 @@ eval' env (If cond x y) = do
     Boolean True  -> eval' env x
     Boolean False -> eval' env y
     _ -> error "Eval.eval: conditional not a boolean"
+eval' env (Fix x) = return $ Closure env (Fix x)
 
-apply :: Value -> Value -> StateT Environment (Except String) Value
+apply :: Value -> Value -> ReaderT Environment (Except String) Value
 apply (Closure env (Lam _ body)) x = eval' (x:env) body
+apply (Closure env (Fix body)) x = do
+  body' <- eval' env (App body (Fix body))
+  apply body' x
 apply _ _ = error "Eval.apply: not a closure"
 
 arith :: Op -> Value -> Value -> Value
@@ -59,4 +63,4 @@ arith LessE    (Number x) (Number y) = Boolean (x <= y)
 arith Greater  (Number x) (Number y) = Boolean (x > y)
 arith GreaterE (Number x) (Number y) = Boolean (x >= y)
 arith Equals   (Number x) (Number y) = Boolean (x == y)
-arith _ _ _ = error "Eval.arith: not a number"
+arith _ x y = error $ "Eval.arith: not a number" ++ show x ++ "\n" ++ show y

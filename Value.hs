@@ -6,14 +6,16 @@ module Value
 import Expr
 import Type
 
+import qualified Data.Map as M
+
 data Value
   = Closure [Value] Expr
   | Number Integer
   | Boolean Bool
 
 instance Show Value where
-  show (Closure _ _) = "<closure>"
+  show (Closure _ e) = "<closure `" ++ show e ++ "`>"
   show (Number x)    = show x
   show (Boolean x)   = if x then "true" else "false"
 
-type Environment = [(String, (Scheme, Value))]
+type Environment = M.Map String (Value, Scheme)
