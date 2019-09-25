@@ -37,10 +37,16 @@ eval' env (Op op x y) = do
   x' <- eval' env x
   y' <- eval' env y
   return $ arith op x' y'
+eval' env (If cond x y) = do
+  cond' <- eval' env cond
+  case cond' of
+    Boolean True  -> eval' env x
+    Boolean False -> eval' env y
+    _ -> error "Eval.eval: conditional not a boolean"
 
 apply :: Value -> Value -> StateT Environment (Except String) Value
 apply (Closure env (Lam _ body)) x = eval' (x:env) body
-apply _ _                          = error "Eval.apply: not a closure"
+apply _ _ = error "Eval.apply: not a closure"
 
 arith :: Op -> Value -> Value -> Value
 arith Add      (Number x) (Number y) = Number (x + y)

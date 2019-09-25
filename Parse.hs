@@ -20,7 +20,8 @@ parse s =
     Right x -> return $ x
 
 isReserved :: Name -> Bool
-isReserved x = elem x ["let", "in", "Num", "Bool", "true", "false"]
+isReserved x = elem x
+  ["let" , "in" , "Num" , "Bool" , "true" , "false" , "if" , "then" , "else"]
 
 statement :: Parser Statement
 statement = Expr <$> letExpr
@@ -37,6 +38,7 @@ letStatement = try $ do
 
 expression :: Parser Expr
 expression = letExpr
+         <|> ifExpr
          <|> lambda
          <|> addExpr
          <|> mulExpr
@@ -56,6 +58,16 @@ letExpr = try $ do
   reserved "in" ()
   y <- local (x:) expression
   return $ Let e y
+
+ifExpr :: Parser Expr
+ifExpr = try $ do
+  reserved "if" ()
+  cond <- expression
+  reserved "then" ()
+  x <- expression
+  reserved "else" ()
+  y <- expression
+  return $ If cond x y
 
 lambda :: Parser Expr
 lambda = try $ do

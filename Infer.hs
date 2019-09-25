@@ -75,6 +75,14 @@ infer' env (Op op x y) = do
     Mod -> NumT
     _   -> BoolT
 
+infer' env (If cond x y) = do
+  tcond <- infer' env cond
+  tcond `unify` BoolT
+  tx <- infer' env x
+  ty <- infer' env y
+  tx `unify` ty
+  return tx
+
 instantiate :: Scheme -> Infer Type
 instantiate (Forall xs x) = do
   xs' <- mapM (\x' -> (,) x' <$> newType) xs

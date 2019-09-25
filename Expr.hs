@@ -23,6 +23,7 @@ data Expr
   | Num Integer
   | Bool Bool
   | Op Op Expr Expr
+  | If Expr Expr Expr
   deriving Show
 
 data Op
