@@ -4,6 +4,7 @@ module Eval
 
 import Expr
 import Value
+import Repl
 
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -12,10 +13,10 @@ import qualified Data.Map as M
 
 import Safe (atMay)
 
-eval :: Expr -> ReaderT Environment (Except String) Value
+eval :: Expr -> ExceptT String Repl Value
 eval = eval' []
 
-eval' :: [Value] -> Expr -> ReaderT Environment (Except String) Value
+eval' :: [Value] -> Expr -> ExceptT String Repl Value
 eval' env (Ref x) =
   case atMay env x of
     Just x' -> return x'
@@ -45,7 +46,7 @@ eval' env (If cond x y) = do
     _ -> error "Eval.eval: conditional not a boolean"
 eval' env (Fix x) = return $ Closure env (Fix x)
 
-apply :: Value -> Value -> ReaderT Environment (Except String) Value
+apply :: Value -> Value -> ExceptT String Repl Value
 apply (Closure env (Lam _ body)) x = eval' (x:env) body
 apply (Closure env (Fix body)) x = do
   body' <- eval' env (App body (Fix body))

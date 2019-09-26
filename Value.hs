@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Value
   ( Value(..)
   , Environment
@@ -14,7 +16,7 @@ data Value
   | Boolean Bool
 
 instance Show Value where
-  show (Closure _ e) = "<closure `" ++ show e ++ "`>"
+  show (Closure _ _) = "<closure>"
   show (Number x)    = show x
   show (Boolean x)   = if x then "true" else "false"
 

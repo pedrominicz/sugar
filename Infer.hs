@@ -3,8 +3,8 @@ module Infer
   ) where
 
 import Expr
+import Repl
 import Type
-import Value
 
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -18,9 +18,9 @@ import Safe (atMay)
 
 type Binding = (Int, [(Int, Type)])
 
-type Infer = StateT Binding (ReaderT Environment (Except String))
+type Infer = StateT Binding (ExceptT String Repl)
 
-infer :: Expr -> ReaderT Environment (Except String) Scheme
+infer :: Expr -> ExceptT String Repl Scheme
 infer expr = flip evalStateT (0, []) $ do
   t  <- infer' [] expr
   t' <- applyBindings t
