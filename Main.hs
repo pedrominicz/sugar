@@ -17,14 +17,14 @@ import qualified Data.Map as M
 
 import System.Console.Haskeline
 
-type Sugar a = MaybeT (StateT Environment (InputT IO)) a
+type Repl a = MaybeT (StateT Environment (InputT IO)) a
 
-runSugar :: Sugar () -> InputT IO ()
-runSugar x = do
+runRepl :: Repl () -> InputT IO ()
+runRepl x = do
   _ <- evalStateT (runMaybeT x) M.empty
   return ()
 
-readInput :: String -> Sugar String
+readInput :: String -> Repl String
 readInput prompt = do
   maybeInput <- lift . lift $ getInputLine prompt
   case dropWhile isSpace <$> maybeInput of
@@ -32,7 +32,7 @@ readInput prompt = do
     Just ""    -> readInput prompt
     Just input -> return input
 
-runStatement :: Statement -> Sugar ()
+runStatement :: Statement -> Repl ()
 runStatement (Let' x expr) = do
   env <- get
   case runExcept (runReaderT (infer expr) env) of
@@ -53,7 +53,7 @@ runStatement (Expr expr) = do
         Right (Closure _ _) -> lift . lift $ outputStrLn $ show t
         Right result        -> lift . lift $ outputStrLn $ show result
 
-repl :: Sugar ()
+repl :: Repl ()
 repl = do
   input <- readInput "> "
   case runExcept (parse input) of
@@ -62,4 +62,4 @@ repl = do
   repl
 
 main :: IO ()
-main = runInputT defaultSettings (runSugar repl)
+main = runInputT defaultSettings (runRepl repl)

@@ -10,6 +10,8 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 
+import qualified Data.IntSet as IS
+import qualified Data.IntMap as IM
 import qualified Data.Map as M
 
 import Safe (atMay)
@@ -41,11 +43,11 @@ infer' _ (Global x) = do
     Just (_, t) -> instantiate t
     Nothing     -> throwError $ "unbound variable: " ++ x
 infer' env (Lam (Just t) x) = do
-  tx <- infer' (Forall [] t:env) x
+  tx <- infer' (Forall IS.empty t:env) x
   return $ LamT t tx
 infer' env (Lam Nothing x) = do
   t  <- newType
-  tx <- infer' (Forall [] t:env) x
+  tx <- infer' (Forall IS.empty t:env) x
   return $ LamT t tx
 infer' env (App x y) = do
   tx <- infer' env x
@@ -81,26 +83,28 @@ infer' env (Fix x) = do
 
 instantiate :: Scheme -> Infer Type
 instantiate (Forall xs x) = do
-  xs' <- mapM (\x' -> (,) x' <$> newType) xs
+  xs' <- IM.fromList <$> mapM (\x' -> (,) x' <$> newType) (IS.toList xs)
   return $ instantiate' xs' x
 
-instantiate' :: [(Int, Type)] -> Type -> Type
+instantiate' :: IM.IntMap Type -> Type -> Type
 instantiate' xs t@(TVar x) =
-  case lookup x xs of
+  case IM.lookup x xs of
     Just x' -> x'
     Nothing -> t
 instantiate' xs (LamT x y) = LamT (instantiate' xs x) (instantiate' xs y)
 instantiate' _ x           = x
 
 generalize :: [Scheme] -> Type -> Scheme
-generalize env x = Forall (filter (`notElem` freeEnv) freeVar) x
-  where freeEnv = concatMap (\(Forall _ x') -> free x') env
+generalize env x = Forall (IS.filter (`IS.notMember` freeEnv) freeVar) x
+  where freeEnv = foldr filter' IS.empty env
         freeVar = free x
 
-free :: Type -> [Int]
-free (TVar x)   = [x]
-free (LamT x y) = free x ++ free y
-free _          = []
+        filter' (Forall _ x') env' = env' `IS.union` free x'
+
+free :: Type -> IS.IntSet
+free (TVar x)   = IS.singleton x
+free (LamT x y) = free x `IS.union` free y
+free _          = IS.empty
 
 unify :: Type -> Type -> Infer ()
 unify x y = do

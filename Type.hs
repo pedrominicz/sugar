@@ -4,7 +4,9 @@ module Type
   ) where
 
 import Control.Monad.State
+
 import Data.List (elemIndex)
+import qualified Data.IntSet as IS
 
 data Type
   = TVar Int
@@ -12,7 +14,7 @@ data Type
   | NumT
   | BoolT
 
-data Scheme = Forall [Int] Type
+data Scheme = Forall IS.IntSet Type
   deriving Show
 
 instance Show Type where
