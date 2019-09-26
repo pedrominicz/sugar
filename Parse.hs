@@ -57,14 +57,14 @@ ifExpr = try $ do
 
 lambda :: Parser Expr
 lambda = try $ do
-  optional $ char 'λ' *> whitespace
-  x <- name
+  char '\\' *> whitespace
+  xs <- many1 name
   old <- get
-  char '.' *> whitespace
+  string "->" *> whitespace
   y <- expression
   new <- get
-  put $ old `S.union` (S.delete x new)
-  return $ Lam x y
+  put $ old `S.union` (S.difference (S.fromList xs) new)
+  return $ foldr (\x y -> Lam x y) y xs
 
 compareExpr :: Parser Expr
 compareExpr = try $ expression' `chainl1` operator
