@@ -14,8 +14,6 @@ import qualified Data.IntSet as IS
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
 
-import Safe (atMay)
-
 type Binding = (Int, IM.IntMap Type)
 
 type Infer = StateT Binding (ExceptT String Repl)
@@ -32,20 +30,19 @@ newType = do
   put (i + 1, env)
   return $ TVar i
 
-infer' :: [Type] -> Expr -> Infer Type
-infer' env (Ref x) =
-  case atMay env x of
-    Just t  -> return t
-    Nothing -> error $ "Infer.infer': unbound reference"
-infer' _ (Global x) = do
-  env <- ask
-  case M.lookup x env of
-    Just (_, t) -> instantiate t
-    Nothing     -> throwError $ "unbound variable: " ++ x
-infer' env (Lam x) = do
+infer' :: [(Name, Type)] -> Expr -> Infer Type
+infer' env (Var x) = do
+  case lookup x env of
+    Just t -> return t
+    Nothing -> do
+      env' <- ask
+      case M.lookup x env' of
+        Just (_, t) -> instantiate t
+        Nothing     -> throwError $ "unbound variable: " ++ x
+infer' env (Lam x y) = do
   t  <- newType
-  tx <- infer' (t:env) x
-  return $ LamT t tx
+  ty <- infer' ((x, t):env) y
+  return $ LamT t ty
 infer' env (App x y) = do
   tx <- infer' env x
   ty <- infer' env y

@@ -11,22 +11,19 @@ import Control.Monad.Reader
 
 import qualified Data.Map as M
 
-import Safe (atMay)
-
 eval :: Expr -> ExceptT String Repl Value
 eval = eval' []
 
-eval' :: [Value] -> Expr -> ExceptT String Repl Value
-eval' env (Ref x) =
-  case atMay env x of
+eval' :: [(Name, Value)] -> Expr -> ExceptT String Repl Value
+eval' env (Var x) = do
+  case lookup x env of
     Just x' -> return x'
-    Nothing -> error $ "Eval.eval': unbound reference"
-eval' _ (Global x) = do
-  env <- ask
-  case M.lookup x env of
-    Just (x', _) -> return x'
-    Nothing      -> error $ "Eval.eval': unbound variable: " ++ x
-eval' env (Lam x) = return $ Closure env (Lam x)
+    Nothing -> do
+      env' <- ask
+      case M.lookup x env' of
+        Just (x', _) -> return x'
+        Nothing      -> error $ "Eval.eval': unbound variable: " ++ x
+eval' env (Lam x y) = return $ Closure env (Lam x y)
 eval' env (App x y) = do
   x' <- eval' env x
   y' <- eval' env y
@@ -46,7 +43,7 @@ eval' env (If cond x y) = do
 eval' env (Fix x) = return $ Closure env (Fix x)
 
 apply :: Value -> Value -> ExceptT String Repl Value
-apply (Closure env (Lam body)) x = eval' (x:env) body
+apply (Closure env (Lam x body)) y = eval' ((x, y):env) body
 apply (Closure env (Fix body)) x = do
   body' <- eval' env (App body (Fix body))
   apply body' x

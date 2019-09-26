@@ -16,9 +16,8 @@ data Statement
   deriving Show
 
 data Expr
-  = Ref Int
-  | Global Name
-  | Lam Expr
+  = Var Name
+  | Lam Name Expr
   | App Expr Expr
   | Num Integer
   | Bool Bool

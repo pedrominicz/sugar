@@ -5,16 +5,13 @@ module Parse
 import Expr
 
 import Control.Monad.Except
-import Control.Monad.Reader
 
-import Data.List (elemIndex)
 import Text.Parsec hiding (parse)
-
-type Parser = ParsecT String () (Reader [Name])
+import Text.Parsec.String (Parser)
 
 parse :: String -> Except String Statement
 parse s =
-  case runReader (runParserT (whitespace *> statement <* eof) () "" s) [] of
+  case runParser (whitespace *> statement <* eof) () "" s of
     Left e  -> throwError $ show e
     Right x -> return $ x
 
@@ -29,8 +26,8 @@ letStatement :: Parser Statement
 letStatement = try $ do
   x <- name
   char '=' *> whitespace
-  e <- local (x:) expression
-  return $ Let x (Fix (Lam e))
+  e <- expression
+  return $ Let x (Fix (Lam x e))
 
 expression :: Parser Expr
 expression = ifExpr
@@ -59,8 +56,8 @@ lambda = try $ do
   optional $ char 'λ' *> whitespace
   x <- name
   char '.' *> whitespace
-  y <- local (x:) expression
-  return $ Lam y
+  y <- expression
+  return $ Lam x y
 
 compareExpr :: Parser Expr
 compareExpr = try $ expression' `chainl1` operator
@@ -119,12 +116,7 @@ boolean :: Parser Expr
 boolean = Bool <$> (reserved "true" True <|> reserved "false" False)
 
 variable :: Parser Expr
-variable = do
-  x   <- name
-  env <- ask
-  case elemIndex x env of
-    Just i  -> return $ Ref i
-    Nothing -> return $ Global x
+variable = Var <$> name
 
 number :: Parser Expr
 number = do
