@@ -26,12 +26,14 @@ statement = letStatement
 letStatement :: Parser Statement
 letStatement = try $ do
   x <- name
+  xs <- many name
   char '=' *> whitespace
-  e <- expression
+  y' <- expression
   seen <- get
+  let y = foldr (\x y -> Lam x y) y' xs
   if S.member x seen
-    then return $ Let x (Fix (Lam x e))
-    else return $ Let x e
+    then return $ Let x (Fix (Lam x y))
+    else return $ Let x y
 
 expression :: Parser Expr
 expression = ifExpr
