@@ -17,7 +17,7 @@ import System.Console.Haskeline
 
 runStatement :: Statement -> Repl ()
 runStatement (Let x expr) = do
-  scheme <- runExceptT (infer expr)
+  scheme <- infer expr
   case scheme of
     Left e -> showStrLn e
     Right scheme'@(Forall _ t) -> do
@@ -28,7 +28,7 @@ runStatement (Let x expr) = do
           modify $ M.insert x (result', scheme')
           showStrLn $ x ++ " : " ++ show t
 runStatement (Expr expr) = do
-  scheme <- runExceptT (infer expr)
+  scheme <- infer expr
   case scheme of
     Left e -> showStrLn e
     Right (Forall _ t) -> do

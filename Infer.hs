@@ -16,13 +16,15 @@ import qualified Data.Map as M
 
 type Binding = (Int, IM.IntMap Type)
 
-type Infer = StateT Binding (ExceptT String Repl)
+type Infer = StateT Binding (ReaderT (M.Map Name Scheme) (Except String))
 
-infer :: Expr -> ExceptT String Repl Scheme
-infer expr = flip evalStateT (0, IM.empty) $ do
-  t  <- infer' [] expr
-  t' <- applyBindings t
-  return $ generalize t'
+infer :: Expr -> Repl (Either String Scheme)
+infer expr = do
+  env <- M.map snd <$> ask
+  return $ runExcept $ flip runReaderT env $ flip evalStateT (0, IM.empty) $ do
+    t  <- infer' expr
+    t' <- applyBindings t
+    return $ generalize t'
 
 newType :: Infer Type
 newType = do
@@ -30,42 +32,39 @@ newType = do
   put (i + 1, env)
   return $ TVar i
 
-infer' :: [(Name, Type)] -> Expr -> Infer Type
-infer' env (Var x) = do
-  case lookup x env of
-    Just t -> return t
-    Nothing -> do
-      env' <- ask
-      case M.lookup x env' of
-        Just (_, t) -> instantiate t
-        Nothing     -> throwError $ "unbound variable: " ++ x
-infer' env (Lam x y) = do
+infer' :: Expr -> Infer Type
+infer' (Var x) = do
+  env <- ask
+  case M.lookup x env of
+    Just x  -> instantiate x
+    Nothing -> throwError $ "unbound variable: " ++ x
+infer' (Lam x y) = do
   t  <- newType
-  ty <- infer' ((x, t):env) y
+  ty <- local (M.insert x (Forall IS.empty t)) $ infer' y
   return $ LamT t ty
-infer' env (App x y) = do
-  tx <- infer' env x
-  ty <- infer' env y
+infer' (App x y) = do
+  tx <- infer' x
+  ty <- infer' y
   t  <- newType
   tx `unify` LamT ty t
   return t
-infer' _ (Num _)  = return NumT
-infer' _ (Bool _) = return BoolT
-infer' env (Op op x y) = do
-  tx <- infer' env x
-  ty <- infer' env y
+infer' (Num _)  = return NumT
+infer' (Bool _) = return BoolT
+infer' (Op op x y) = do
+  tx <- infer' x
+  ty <- infer' y
   tx `unify` NumT
   ty `unify` NumT
   return $ opType op
-infer' env (If cond x y) = do
-  tcond <- infer' env cond
+infer' (If cond x y) = do
+  tcond <- infer' cond
   tcond `unify` BoolT
-  tx <- infer' env x
-  ty <- infer' env y
+  tx <- infer' x
+  ty <- infer' y
   tx `unify` ty
   return tx
-infer' env (Fix x) = do
-  tx <- infer' env x
+infer' (Fix x) = do
+  tx <- infer' x
   case tx of
     LamT t t' -> do
       t `unify` t'
