@@ -4,12 +4,15 @@ module Parse
 
 import Expr
 
-import Text.Parsec hiding (parse)
-import Text.Parsec.String (Parser)
+import Control.Monad.State
+import Text.Parsec hiding (parse, State)
+import qualified Data.Set as S
+
+type Parser = ParsecT String () (State (S.Set Name))
 
 parse :: String -> Either String Statement
 parse s =
-  case runParser (whitespace *> statement <* eof) () "" s of
+  case evalState (runParserT (whitespace *> statement <* eof) () "" s) S.empty of
     Left e  -> Left $ show e
     Right x -> Right x
 
@@ -25,7 +28,10 @@ letStatement = try $ do
   x <- name
   char '=' *> whitespace
   e <- expression
-  return $ Let x (Fix (Lam x e))
+  seen <- get
+  if S.member x seen
+    then return $ Let x (Fix (Lam x e))
+    else return $ Let x e
 
 expression :: Parser Expr
 expression = ifExpr
@@ -53,8 +59,11 @@ lambda :: Parser Expr
 lambda = try $ do
   optional $ char 'λ' *> whitespace
   x <- name
+  old <- get
   char '.' *> whitespace
   y <- expression
+  new <- get
+  put $ old `S.union` (S.delete x new)
   return $ Lam x y
 
 compareExpr :: Parser Expr
@@ -114,7 +123,10 @@ boolean :: Parser Expr
 boolean = Bool <$> (reserved "true" True <|> reserved "false" False)
 
 variable :: Parser Expr
-variable = Var <$> name
+variable = do
+  x <- name
+  modify $ S.insert x
+  return $ Var x
 
 number :: Parser Expr
 number = do
