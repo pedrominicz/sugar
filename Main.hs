@@ -16,7 +16,7 @@ import qualified Data.Map as M
 import System.Console.Haskeline
 
 runStatement :: Statement -> Repl ()
-runStatement (Let' x expr) = do
+runStatement (Let x expr) = do
   scheme <- runExceptT (infer expr)
   case scheme of
     Left e -> showStrLn e

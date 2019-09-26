@@ -31,7 +31,6 @@ eval' env (App x y) = do
   x' <- eval' env x
   y' <- eval' env y
   apply x' y'
-eval' env (Let x y) = eval' env (App (Lam y) x)
 eval' _ (Num x)     = return $ Number x
 eval' _ (Bool x)    = return $ Boolean x
 eval' env (Op op x y) = do

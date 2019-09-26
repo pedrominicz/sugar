@@ -24,7 +24,7 @@ infer :: Expr -> ExceptT String Repl Scheme
 infer expr = flip evalStateT (0, IM.empty) $ do
   t  <- infer' [] expr
   t' <- applyBindings t
-  return $ generalize [] t'
+  return $ generalize t'
 
 newType :: Infer Type
 newType = do
@@ -32,10 +32,10 @@ newType = do
   put (i + 1, env)
   return $ TVar i
 
-infer' :: [Scheme] -> Expr -> Infer Type
+infer' :: [Type] -> Expr -> Infer Type
 infer' env (Ref x) =
   case atMay env x of
-    Just t  -> instantiate t
+    Just t  -> return t
     Nothing -> error $ "Infer.infer': unbound reference"
 infer' _ (Global x) = do
   env <- ask
@@ -44,7 +44,7 @@ infer' _ (Global x) = do
     Nothing     -> throwError $ "unbound variable: " ++ x
 infer' env (Lam x) = do
   t  <- newType
-  tx <- infer' (Forall IS.empty t:env) x
+  tx <- infer' (t:env) x
   return $ LamT t tx
 infer' env (App x y) = do
   tx <- infer' env x
@@ -52,9 +52,6 @@ infer' env (App x y) = do
   t  <- newType
   tx `unify` LamT ty t
   return t
-infer' env (Let x y) = do
-  t <- generalize env <$> infer' env x
-  infer' (t:env) y
 infer' _ (Num _)  = return NumT
 infer' _ (Bool _) = return BoolT
 infer' env (Op op x y) = do
@@ -91,17 +88,11 @@ instantiate' xs t@(TVar x) =
 instantiate' xs (LamT x y) = LamT (instantiate' xs x) (instantiate' xs y)
 instantiate' _ x           = x
 
-generalize :: [Scheme] -> Type -> Scheme
-generalize env x = Forall (IS.filter (`IS.notMember` freeEnv) freeVar) x
-  where freeEnv = foldr filter' IS.empty env
-        freeVar = free x
-
-        filter' (Forall _ x') env' = env' `IS.union` free x'
-
-free :: Type -> IS.IntSet
-free (TVar x)   = IS.singleton x
-free (LamT x y) = free x `IS.union` free y
-free _          = IS.empty
+generalize :: Type -> Scheme
+generalize x = Forall (free x) x
+  where free (TVar x)   = IS.singleton x
+        free (LamT x y) = free x `IS.union` free y
+        free _          = IS.empty
 
 unify :: Type -> Type -> Infer ()
 unify x y = do

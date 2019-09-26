@@ -11,7 +11,7 @@ import Type
 type Name = String
 
 data Statement
-  = Let' Name Expr
+  = Let Name Expr
   | Expr Expr
   deriving Show
 
@@ -20,7 +20,6 @@ data Expr
   | Global Name
   | Lam Expr
   | App Expr Expr
-  | Let Expr Expr
   | Num Integer
   | Bool Bool
   | Op Op Expr Expr

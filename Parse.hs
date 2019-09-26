@@ -19,25 +19,21 @@ parse s =
     Right x -> return $ x
 
 isReserved :: Name -> Bool
-isReserved x = elem x
-  ["let" , "in" , "Num" , "Bool" , "true" , "false" , "if" , "then" , "else"]
+isReserved x = elem x ["true" , "false" , "if" , "then" , "else"]
 
 statement :: Parser Statement
-statement = Expr <$> letExpr
-        <|> letStatement
+statement = letStatement
         <|> Expr <$> expression
 
 letStatement :: Parser Statement
 letStatement = try $ do
-  reserved "let" ()
   x <- name
   char '=' *> whitespace
   e <- local (x:) expression
-  return $ Let' x (Fix (Lam e))
+  return $ Let x (Fix (Lam e))
 
 expression :: Parser Expr
-expression = letExpr
-         <|> ifExpr
+expression = ifExpr
          <|> lambda
          <|> compareExpr
          <|> addExpr
@@ -47,16 +43,6 @@ expression = letExpr
          <|> boolean
          <|> number
          <|> parens expression
-
-letExpr :: Parser Expr
-letExpr = try $ do
-  reserved "let" ()
-  x <- name
-  char '=' *> whitespace
-  e <- local (x:) expression
-  reserved "in" ()
-  y <- local (x:) expression
-  return $ Let (Fix (Lam e)) y
 
 ifExpr :: Parser Expr
 ifExpr = try $ do
