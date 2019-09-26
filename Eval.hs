@@ -26,12 +26,12 @@ eval' _ (Global x) = do
   case M.lookup x env of
     Just (x', _) -> return x'
     Nothing      -> error $ "Eval.eval': unbound variable: " ++ x
-eval' env (Lam _ x) = return $ Closure env (Lam Nothing x)
+eval' env (Lam x) = return $ Closure env (Lam x)
 eval' env (App x y) = do
   x' <- eval' env x
   y' <- eval' env y
   apply x' y'
-eval' env (Let x y) = eval' env (App (Lam Nothing y) x)
+eval' env (Let x y) = eval' env (App (Lam y) x)
 eval' _ (Num x)     = return $ Number x
 eval' _ (Bool x)    = return $ Boolean x
 eval' env (Op op x y) = do
@@ -47,7 +47,7 @@ eval' env (If cond x y) = do
 eval' env (Fix x) = return $ Closure env (Fix x)
 
 apply :: Value -> Value -> ExceptT String Repl Value
-apply (Closure env (Lam _ body)) x = eval' (x:env) body
+apply (Closure env (Lam body)) x = eval' (x:env) body
 apply (Closure env (Fix body)) x = do
   body' <- eval' env (App body (Fix body))
   apply body' x

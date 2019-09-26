@@ -26,7 +26,7 @@ runStatement (Let' x expr) = do
         Left e -> showStrLn e
         Right result' -> do
           modify $ M.insert x (result', scheme')
-          showStrLn $ " : " ++ show t
+          showStrLn $ x ++ " : " ++ show t
 runStatement (Expr expr) = do
   scheme <- runExceptT (infer expr)
   case scheme of

@@ -3,7 +3,6 @@ module Parse
   ) where
 
 import Expr
-import Type
 
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -34,7 +33,7 @@ letStatement = try $ do
   x <- name
   char '=' *> whitespace
   e <- local (x:) expression
-  return $ Let' x (Fix (Lam Nothing e))
+  return $ Let' x (Fix (Lam e))
 
 expression :: Parser Expr
 expression = letExpr
@@ -57,7 +56,7 @@ letExpr = try $ do
   e <- local (x:) expression
   reserved "in" ()
   y <- local (x:) expression
-  return $ Let (Fix (Lam Nothing e)) y
+  return $ Let (Fix (Lam e)) y
 
 ifExpr :: Parser Expr
 ifExpr = try $ do
@@ -73,24 +72,9 @@ lambda :: Parser Expr
 lambda = try $ do
   optional $ char 'λ' *> whitespace
   x <- name
-  t <- maybeType
   char '.' *> whitespace
   y <- local (x:) expression
-  return $ Lam t y
-
-maybeType :: Parser (Maybe Type)
-maybeType = optionMaybe $ do
-  char ':' *> whitespace
-  t <- lambdaType
-  return t
-
-lambdaType :: Parser Type
-lambdaType = ty `chainr1` arrow
-  where ty = reserved "Num" NumT
-         <|> reserved "Bool" BoolT
-         <|> parens lambdaType
-
-        arrow = return LamT <* string "->" <* whitespace
+  return $ Lam y
 
 compareExpr :: Parser Expr
 compareExpr = try $ expression' `chainl1` operator

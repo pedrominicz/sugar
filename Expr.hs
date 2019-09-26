@@ -18,7 +18,7 @@ data Statement
 data Expr
   = Ref Int
   | Global Name
-  | Lam (Maybe Type) Expr
+  | Lam Expr
   | App Expr Expr
   | Let Expr Expr
   | Num Integer

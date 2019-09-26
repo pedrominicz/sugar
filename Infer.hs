@@ -42,10 +42,7 @@ infer' _ (Global x) = do
   case M.lookup x env of
     Just (_, t) -> instantiate t
     Nothing     -> throwError $ "unbound variable: " ++ x
-infer' env (Lam (Just t) x) = do
-  tx <- infer' (Forall IS.empty t:env) x
-  return $ LamT t tx
-infer' env (Lam Nothing x) = do
+infer' env (Lam x) = do
   t  <- newType
   tx <- infer' (Forall IS.empty t:env) x
   return $ LamT t tx
