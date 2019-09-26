@@ -16,12 +16,12 @@ import qualified Data.Map as M
 
 import Safe (atMay)
 
-type Binding = (Int, [(Int, Type)])
+type Binding = (Int, IM.IntMap Type)
 
 type Infer = StateT Binding (ExceptT String Repl)
 
 infer :: Expr -> ExceptT String Repl Scheme
-infer expr = flip evalStateT (0, []) $ do
+infer expr = flip evalStateT (0, IM.empty) $ do
   t  <- infer' [] expr
   t' <- applyBindings t
   return $ generalize [] t'
@@ -115,7 +115,7 @@ unify x y = do
 unify' :: Type -> Type -> Infer ()
 unify' (TVar x) y = do
   y' <- applyBindings y
-  modify (\(i, env) -> (i, (x, y'):env))
+  modify $ \(i, env) -> (i, IM.insert x y' env)
 unify' x y@(TVar _) = unify' y x
 unify' (LamT x x') (LamT y y') = do
   unify' x y
@@ -124,12 +124,12 @@ unify' (LamT x x') (LamT y y') = do
   unify' x'' y''
 unify' NumT NumT   = return ()
 unify' BoolT BoolT = return ()
-unify' _ _         = throwError "cannot match types"
+unify' _ _ = throwError "cannot match types"
 
 applyBindings :: Type -> Infer Type
 applyBindings (TVar x) = do
   (_, env) <- get
-  case lookup x env of
+  case IM.lookup x env of
     Just x' -> do
       occursGuard x x'
       applyBindings x'
@@ -146,4 +146,4 @@ occursGuard x (LamT x' y') = do
   occursGuard x x'
   occursGuard x y'
 occursGuard x (TVar x') | x == x' = throwError "infinite type"
-occursGuard _ _                   = return ()
+occursGuard _ _ = return ()
