@@ -8,7 +8,6 @@ import Repl
 import Type
 import Value
 
-import Control.Monad.Except
 import Control.Monad.State
 
 import qualified Data.Map as M
@@ -21,7 +20,7 @@ runStatement (Let x expr) = do
   case scheme of
     Left e -> showStrLn e
     Right scheme'@(Forall _ t) -> do
-      result <- runExceptT (eval expr)
+      result <- eval expr
       case result of
         Left e -> showStrLn e
         Right result' -> do
@@ -32,7 +31,7 @@ runStatement (Expr expr) = do
   case scheme of
     Left e -> showStrLn e
     Right (Forall _ t) -> do
-      result <- runExceptT (eval expr)
+      result <- eval expr
       case result of
         Left e              -> showStrLn e
         Right (Closure _ _) -> showStrLn $ show t
@@ -41,7 +40,7 @@ runStatement (Expr expr) = do
 repl :: Repl ()
 repl = do
   input <- readInput "> "
-  case runExcept (parse input) of
+  case parse input of
     Left e          -> showStrLn e
     Right statement -> runStatement statement
   repl

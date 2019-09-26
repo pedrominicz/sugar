@@ -4,16 +4,14 @@ module Parse
 
 import Expr
 
-import Control.Monad.Except
-
 import Text.Parsec hiding (parse)
 import Text.Parsec.String (Parser)
 
-parse :: String -> Except String Statement
+parse :: String -> Either String Statement
 parse s =
   case runParser (whitespace *> statement <* eof) () "" s of
-    Left e  -> throwError $ show e
-    Right x -> return $ x
+    Left e  -> Left $ show e
+    Right x -> Right x
 
 isReserved :: Name -> Bool
 isReserved x = elem x ["true" , "false" , "if" , "then" , "else"]

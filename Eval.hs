@@ -11,41 +11,47 @@ import Control.Monad.Reader
 
 import qualified Data.Map as M
 
-eval :: Expr -> ExceptT String Repl Value
-eval = eval' []
+type Eval = ReaderT (M.Map Name Value) (Except String)
 
-eval' :: [(Name, Value)] -> Expr -> ExceptT String Repl Value
-eval' env (Var x) = do
-  case lookup x env of
+eval :: Expr -> Repl (Either String Value)
+eval expr = do
+  env <- M.map fst <$> ask
+  return $ runExcept $ runReaderT (eval' expr) env
+
+eval' :: Expr -> Eval Value
+eval' (Var x) = do
+  env <- ask
+  case M.lookup x env of
     Just x' -> return x'
-    Nothing -> do
-      env' <- ask
-      case M.lookup x env' of
-        Just (x', _) -> return x'
-        Nothing      -> error $ "Eval.eval': unbound variable: " ++ x
-eval' env (Lam x y) = return $ Closure env (Lam x y)
-eval' env (App x y) = do
-  x' <- eval' env x
-  y' <- eval' env y
+    Nothing -> error $ "Eval.eval': unbound variable: " ++ x
+eval' (Lam x y) = do
+  env <- ask
+  return $ Closure env (Lam x y)
+eval' (App x y) = do
+  x' <- eval' x
+  y' <- eval' y
   apply x' y'
-eval' _ (Num x)     = return $ Number x
-eval' _ (Bool x)    = return $ Boolean x
-eval' env (Op op x y) = do
-  x' <- eval' env x
-  y' <- eval' env y
+eval' (Num x)     = return $ Number x
+eval' (Bool x)    = return $ Boolean x
+eval' (Op op x y) = do
+  x' <- eval' x
+  y' <- eval' y
   return $ arith op x' y'
-eval' env (If cond x y) = do
-  cond' <- eval' env cond
+eval' (If cond x y) = do
+  cond' <- eval' cond
   case cond' of
-    Boolean True  -> eval' env x
-    Boolean False -> eval' env y
+    Boolean True  -> eval' x
+    Boolean False -> eval' y
     _ -> error "Eval.eval: conditional not a boolean"
-eval' env (Fix x) = return $ Closure env (Fix x)
+eval' (Fix x) = do
+  env <- ask
+  return $ Closure env (Fix x)
 
-apply :: Value -> Value -> ExceptT String Repl Value
-apply (Closure env (Lam x body)) y = eval' ((x, y):env) body
+apply :: Value -> Value -> Eval Value
+apply (Closure env (Lam x body)) y =
+  local (const $ M.insert x y env) $ eval' body
 apply (Closure env (Fix body)) x = do
-  body' <- eval' env (App body (Fix body))
+  body' <- local (const env) $ eval' (App body (Fix body))
   apply body' x
 apply _ _ = error "Eval.apply: not a closure"
 

@@ -9,7 +9,7 @@ import Type
 import qualified Data.Map as M
 
 data Value
-  = Closure [(Name, Value)] Expr
+  = Closure (M.Map Name Value) Expr
   | Number Integer
   | Boolean Bool
 
