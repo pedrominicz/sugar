@@ -1,10 +1,14 @@
 ```
-> and x y = if x then y else false
-and : Bool -> Bool -> Bool
-> ack m n = if m == 0 then n + 1 else if and (m > 0) (n == 0) then ack (m - 1) 1 else ack (m - 1) (ack m (n - 1))
-ack : Num -> Num -> Num
-> ack 3 5
-253
+> s x y z = x z (y z)
+s : (a -> b -> c) -> (a -> b) -> a -> c
+> k x y = x
+k : a -> b -> a
+> i = s k k
+i : a -> a
+> fac x = if x < 1 then 1 else x * fac (x - 1)
+fac : Num -> Num
+> fac 5
+120
 ```
 
 ### Useful Resources
