@@ -66,4 +66,4 @@ arith LessE    (Number x) (Number y) = Boolean (x <= y)
 arith Greater  (Number x) (Number y) = Boolean (x > y)
 arith GreaterE (Number x) (Number y) = Boolean (x >= y)
 arith Equals   (Number x) (Number y) = Boolean (x == y)
-arith _ x y = error $ "Eval.arith: not a number" ++ show x ++ "\n" ++ show y
+arith _ _ _ = error $ "Eval.arith: not a number"

@@ -17,20 +17,18 @@ parse s =
     Right x -> Right x
 
 isReserved :: Name -> Bool
-isReserved x = elem x ["true" , "false" , "if" , "then" , "else"]
+isReserved x = elem x ["let" , "if" , "then" , "else", "true" , "false"]
 
 statement :: Parser Statement
 statement = letStatement
         <|> Expr <$> expression
 
 letStatement :: Parser Statement
-letStatement = try $ do
-  x <- name
-  xs <- many name
-  char '=' *> whitespace
+letStatement = do
+  (x:xs) <- try $ many1 name <* char '=' <* whitespace
   y' <- expression
   seen <- get
-  let y = foldr (\x y -> Lam x y) y' xs
+  let y = foldr Lam y' xs
   if S.member x seen
     then return $ Let x (Fix (Lam x y))
     else return $ Let x y
@@ -39,106 +37,79 @@ expression :: Parser Expr
 expression = ifExpr
          <|> lambda
          <|> compareExpr
-         <|> addExpr
-         <|> mulExpr
-         <|> application
-         <|> variable
-         <|> boolean
-         <|> number
-         <|> parens expression
 
 ifExpr :: Parser Expr
-ifExpr = try $ do
-  reserved "if" ()
+ifExpr = do
+  try $ reserved "if"
   cond <- expression
-  reserved "then" ()
+  reserved "then"
   x <- expression
-  reserved "else" ()
+  reserved "else"
   y <- expression
   return $ If cond x y
 
 lambda :: Parser Expr
-lambda = try $ do
-  char '\\' *> whitespace
+lambda = do
+  try $ char '\\' *> whitespace
   xs <- many1 name
   old <- get
   string "->" *> whitespace
   y <- expression
   new <- get
-  put $ old `S.union` (S.difference (S.fromList xs) new)
+  put $ old `S.union` (S.fromList xs `S.difference` new)
   return $ foldr (\x y -> Lam x y) y xs
 
 compareExpr :: Parser Expr
-compareExpr = try $ expression' `chainl1` operator
-  where expression' = addExpr
-                  <|> mulExpr
-                  <|> application
-                  <|> variable
-                  <|> boolean
-                  <|> number
-                  <|> parens expression
-
-        operator = choice
-          [ Op Less     <$ char '<'
-          , Op LessE    <$ try (string "<=")
-          , Op Greater  <$ char '>'
+compareExpr = addExpr `chainl1` operator
+  where operator = choice
+          [ Op LessE    <$ try (string "<=")
+          , Op Less     <$ char '<'
           , Op GreaterE <$ try (string ">=")
+          , Op Greater  <$ char '>'
           , Op Equals   <$ try (string "==")
           ] <* whitespace
 
 addExpr :: Parser Expr
-addExpr = try $ expression' `chainl1` operator
-  where expression' = mulExpr
-                  <|> application
-                  <|> variable
-                  <|> boolean
-                  <|> number
-                  <|> parens expression
-
-        operator = choice
+addExpr = mulExpr `chainl1` operator
+  where operator = choice
           [ Op Add <$ char '+'
           , Op Sub <$ char '-'
           ] <* whitespace
 
 mulExpr :: Parser Expr
-mulExpr = try $ expression' `chainl1` operator
-  where expression' = application
-                  <|> variable
-                  <|> boolean
-                  <|> number
-                  <|> parens expression
-
-        operator = choice
+mulExpr = application `chainl1` operator
+  where operator = choice
           [ Op Mul <$ char '*'
           , Op Div <$ char '/'
           , Op Mod <$ char '%'
           ] <* whitespace
 
 application :: Parser Expr
-application = try $ expression' `chainl1` return App
+application = expression' `chainl1` return App
   where expression' = variable
                   <|> boolean
                   <|> number
                   <|> parens expression
 
-boolean :: Parser Expr
-boolean = Bool <$> (reserved "true" True <|> reserved "false" False)
-
 variable :: Parser Expr
-variable = do
+variable = try $ do
   x <- name
   modify $ S.insert x
   return $ Var x
 
+boolean :: Parser Expr
+boolean = try $ Bool <$>
+  (reserved "true" *> return True <|> reserved "false" *> return False)
+
 number :: Parser Expr
-number = do
+number = try $ do
   sign   <- option ' ' (char '-')
   digits <- many1 digit
   whitespace
   return $ Num (read (sign:digits))
 
 name :: Parser String
-name = try $ do
+name = do
   c  <- letter
   cs <- many alphaNum
   whitespace
@@ -147,10 +118,8 @@ name = try $ do
     then unexpected s
     else return s
 
-reserved :: String -> a -> Parser a
-reserved s x = try $ do
-  string s *> notFollowedBy alphaNum *> whitespace
-  return x
+reserved :: String -> Parser ()
+reserved s = string s *> notFollowedBy alphaNum *> whitespace
 
 parens :: Parser a -> Parser a
 parens p = between open close p
@@ -159,6 +128,6 @@ parens p = between open close p
 
 whitespace :: Parser ()
 whitespace = skipMany (skipMany1 space <|> comment)
-  where comment = try $ do
-          _ <- char '#'
+  where comment = do
+          _ <- try $ char '#'
           skipMany (satisfy (/= '\n'))

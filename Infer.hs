@@ -97,7 +97,8 @@ unify x y = do
   unify' x' y'
 
 unify' :: Type -> Type -> Infer ()
-unify' (TVar x) (TVar y) | x == y = return ()
+unify' (TVar x) (TVar y)
+  | x == y = return ()
 unify' (TVar x) y   = modify $ \(i, env) -> (i, IM.insert x y env)
 unify' x y@(TVar _) = unify' y x
 unify' (LamT x x') (LamT y y') = do
