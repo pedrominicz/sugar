@@ -31,8 +31,8 @@ eval' (App x y) = do
   x' <- eval' x
   y' <- eval' y
   apply x' y'
-eval' (Num x)     = return $ Number x
-eval' (Bool x)    = return $ Boolean x
+eval' (Num x)  = return $ Number x
+eval' (Bool x) = return $ Boolean x
 eval' (Op op x y) = do
   x' <- eval' x
   y' <- eval' y
@@ -56,14 +56,15 @@ apply (Closure env (Fix body)) x = do
 apply _ _ = error "Eval.apply: not a closure"
 
 arith :: Op -> Value -> Value -> Value
-arith Add      (Number x) (Number y) = Number (x + y)
-arith Sub      (Number x) (Number y) = Number (x - y)
-arith Mul      (Number x) (Number y) = Number (x * y)
-arith Div      (Number x) (Number y) = Number (x `div` y)
-arith Mod      (Number x) (Number y) = Number (x `mod` y)
-arith Less     (Number x) (Number y) = Boolean (x < y)
-arith LessE    (Number x) (Number y) = Boolean (x <= y)
-arith Greater  (Number x) (Number y) = Boolean (x > y)
-arith GreaterE (Number x) (Number y) = Boolean (x >= y)
-arith Equals   (Number x) (Number y) = Boolean (x == y)
+arith Add      (Number x) (Number y)   = Number (x + y)
+arith Sub      (Number x) (Number y)   = Number (x - y)
+arith Mul      (Number x) (Number y)   = Number (x * y)
+arith Div      (Number x) (Number y)   = Number (x `div` y)
+arith Mod      (Number x) (Number y)   = Number (x `mod` y)
+arith Less     (Number x) (Number y)   = Boolean (x < y)
+arith LessE    (Number x) (Number y)   = Boolean (x <= y)
+arith Greater  (Number x) (Number y)   = Boolean (x > y)
+arith GreaterE (Number x) (Number y)   = Boolean (x >= y)
+arith Equals   (Number x) (Number y)   = Boolean (x == y)
+arith Equals   (Boolean x) (Boolean y) = Boolean (x == y)
 arith _ _ _ = error $ "Eval.arith: not a number"

@@ -37,7 +37,7 @@ infer' (Var x) = do
   env <- ask
   case M.lookup x env of
     Just x  -> instantiate x
-    Nothing -> throwError $ "unbound variable: " ++ x
+    Nothing -> throwError $ "Unbound variable: " ++ x
 infer' (Lam x y) = do
   t  <- newType
   ty <- local (M.insert x (Forall IS.empty t)) $ infer' y
@@ -50,6 +50,11 @@ infer' (App x y) = do
   return t
 infer' (Num _)  = return NumT
 infer' (Bool _) = return BoolT
+infer' (Op Equals x y) = do
+  tx <- infer' x
+  ty <- infer' y
+  tx `unify` ty
+  return BoolT
 infer' (Op op x y) = do
   tx <- infer' x
   ty <- infer' y
@@ -69,7 +74,7 @@ infer' (Fix x) = do
     LamT t t' -> do
       t `unify` t'
       return t
-    _ -> throwError $ "cannot fix: " ++ show tx
+    _ -> throwError $ "Cannot fix: " ++ show tx
 
 instantiate :: Scheme -> Infer Type
 instantiate (Forall xs x) = do
@@ -108,7 +113,8 @@ unify' (LamT x x') (LamT y y') = do
   unify' x'' y''
 unify' NumT NumT   = return ()
 unify' BoolT BoolT = return ()
-unify' _ _ = throwError "cannot match types"
+unify' x y =
+  throwError $ "Cannot match\n  " ++ show x ++ "\nwith\n  " ++ show y
 
 applyBindings :: Type -> Infer Type
 applyBindings (TVar x) = do
@@ -126,8 +132,13 @@ applyBindings NumT  = return NumT
 applyBindings BoolT = return BoolT
 
 occursGuard :: Int -> Type -> Infer ()
-occursGuard x (LamT x' y') = do
-  occursGuard x x'
-  occursGuard x y'
-occursGuard x (TVar x') | x == x' = throwError "infinite type"
-occursGuard _ _ = return ()
+occursGuard i x =
+  if occursGuard' i x
+    then throwError $
+      "Cannot construct infinite type\n  a ~ " ++ evalState (showType x) [i]
+    else return ()
+
+occursGuard' :: Int -> Type -> Bool
+occursGuard' x (LamT x' y') = occursGuard' x x' || occursGuard' x y'
+occursGuard' x (TVar x')    = x == x'
+occursGuard' _ _ = False

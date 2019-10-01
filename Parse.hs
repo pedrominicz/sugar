@@ -17,7 +17,7 @@ parse s =
     Right x -> Right x
 
 isReserved :: Name -> Bool
-isReserved x = elem x ["let" , "if" , "then" , "else", "true" , "false"]
+isReserved x = elem x ["if", "then", "else", "true", "false"]
 
 statement :: Parser Statement
 statement = letStatement

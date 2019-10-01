@@ -1,6 +1,7 @@
 module Type
   ( Type(..)
   , Scheme(..)
+  , showType
   ) where
 
 import Control.Monad.State
@@ -18,24 +19,27 @@ data Scheme = Forall IS.IntSet Type
   deriving Show
 
 instance Show Type where
-  show x = evalState (showType False x) []
+  show x = evalState (showType x) []
 
-showType :: Bool -> Type -> State [Int] String
-showType left (TVar x) = do
+showType :: Type -> State [Int] String
+showType = showType' False
+
+showType' :: Bool -> Type -> State [Int] String
+showType' left (TVar x) = do
   env <- get
   case elemIndex x env of
     Just x' -> return $ vars !! x'
     Nothing -> do
       modify (++[x])
-      showType left (TVar x)
-showType left (LamT x y) = do
-  x' <- showType True x
-  y' <- showType False y
+      showType' left (TVar x)
+showType' left (LamT x y) = do
+  x' <- showType' True x
+  y' <- showType' False y
   if left
     then return $ "(" ++ x' ++ " -> " ++ y' ++ ")"
     else return $        x' ++ " -> " ++ y'
-showType _ NumT  = return $ "Num"
-showType _ BoolT = return $ "Bool"
+showType' _ NumT  = return $ "Num"
+showType' _ BoolT = return $ "Bool"
 
 vars :: [String]
 vars = [c:show' n | n <- [0..], c <- ['a'..'z']]
