@@ -33,9 +33,9 @@ runStatement (Expr expr) = do
     Right (Forall _ t) -> do
       result <- eval expr
       case result of
-        Left e              -> showStrLn e
-        Right (Closure _ _) -> showStrLn $ show t
-        Right result'       -> showStrLn $ show result'
+        Left e                -> showStrLn e
+        Right x@(Closure _ _) -> showStrLn $ show x ++ " : " ++ show t
+        Right x               -> showStrLn $ show x
 
 repl :: Repl ()
 repl = do

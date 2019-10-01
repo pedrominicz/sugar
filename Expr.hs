@@ -37,7 +37,18 @@ data Op
   | Greater
   | GreaterE
   | Equals
-  deriving Show
+
+instance Show Op where
+  show Add      = "+"
+  show Sub      = "-"
+  show Mul      = "*"
+  show Div      = "/"
+  show Mod      = "%"
+  show Less     = "<"
+  show LessE    = "<="
+  show Greater  = ">"
+  show GreaterE = ">="
+  show Equals   = "=="
 
 opType :: Op -> Type
 opType Add = NumT

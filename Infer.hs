@@ -97,9 +97,9 @@ generalize x = Forall (free x) x
 
 unify :: Type -> Type -> Infer ()
 unify x y = do
-  x' <- applyBindings x
-  y' <- applyBindings y
-  unify' x' y'
+  x <- applyBindings x
+  y <- applyBindings y
+  unify' x y
 
 unify' :: Type -> Type -> Infer ()
 unify' (TVar x) (TVar y)
@@ -108,9 +108,9 @@ unify' (TVar x) y   = modify $ \(i, env) -> (i, IM.insert x y env)
 unify' x y@(TVar _) = unify' y x
 unify' (LamT x x') (LamT y y') = do
   unify' x y
-  x'' <- applyBindings x'
-  y'' <- applyBindings y'
-  unify' x'' y''
+  x' <- applyBindings x'
+  y' <- applyBindings y'
+  unify' x' y'
 unify' NumT NumT   = return ()
 unify' BoolT BoolT = return ()
 unify' x y =
@@ -125,9 +125,9 @@ applyBindings (TVar x) = do
       applyBindings x'
     Nothing -> return $ TVar x
 applyBindings (LamT x y) = do
-  x' <- applyBindings x
-  y' <- applyBindings y
-  return $ LamT x' y'
+  x <- applyBindings x
+  y <- applyBindings y
+  return $ LamT x y
 applyBindings NumT  = return NumT
 applyBindings BoolT = return BoolT
 
