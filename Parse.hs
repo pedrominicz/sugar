@@ -25,7 +25,7 @@ statement = letStatement
 
 letStatement :: Parser Statement
 letStatement = do
-  (x:xs) <- try $ many1 name <* char '=' <* whitespace
+  (x:xs) <- try $ many1 name <* operator "="
   y' <- expression
   seen <- get
   let y = foldr Lam y' xs
@@ -50,39 +50,39 @@ ifExpr = do
 
 lambda :: Parser Expr
 lambda = do
-  try $ char '\\' *> whitespace
+  try $ operator "\\"
   xs <- many1 name
   old <- get
-  string "->" *> whitespace
+  operator "->"
   y <- expression
   new <- get
   put $ old `S.union` (S.fromList xs `S.difference` new)
   return $ foldr (\x y -> Lam x y) y xs
 
 compareExpr :: Parser Expr
-compareExpr = addExpr `chainl1` operator
-  where operator = choice
-          [ Op LessE    <$ try (string "<=")
-          , Op Less     <$ char '<'
-          , Op GreaterE <$ try (string ">=")
-          , Op Greater  <$ char '>'
-          , Op Equals   <$ try (string "==")
-          ] <* whitespace
+compareExpr = addExpr `chainl1` operator'
+  where operator' = choice
+          [ Op LessE    <$ try (operator "<=")
+          , Op Less     <$ operator "<"
+          , Op GreaterE <$ try (operator ">=")
+          , Op Greater  <$ operator ">"
+          , Op Equals   <$ try (operator "==")
+          ]
 
 addExpr :: Parser Expr
-addExpr = mulExpr `chainl1` operator
-  where operator = choice
-          [ Op Add <$ char '+'
-          , Op Sub <$ char '-'
-          ] <* whitespace
+addExpr = mulExpr `chainl1` operator'
+  where operator' = choice
+          [ Op Add <$ operator "+"
+          , Op Sub <$ operator "-"
+          ]
 
 mulExpr :: Parser Expr
-mulExpr = application `chainl1` operator
-  where operator = choice
-          [ Op Mul <$ char '*'
-          , Op Div <$ char '/'
-          , Op Mod <$ char '%'
-          ] <* whitespace
+mulExpr = application `chainl1` operator'
+  where operator' = choice
+          [ Op Mul <$ operator "*"
+          , Op Div <$ operator "/"
+          , Op Mod <$ operator "%"
+          ]
 
 application :: Parser Expr
 application = expression' `chainl1` return App
@@ -121,13 +121,14 @@ name = do
 reserved :: String -> Parser ()
 reserved s = string s *> notFollowedBy alphaNum *> whitespace
 
+operator :: String -> Parser ()
+operator s = string s *> notFollowedBy (oneOf "%*+-/<=>") *> whitespace
+
 parens :: Parser a -> Parser a
-parens p = between open close p
-  where open  = char '(' <* whitespace
-        close = char ')' <* whitespace
+parens p = between (operator "(") (operator ")") p
 
 whitespace :: Parser ()
 whitespace = skipMany (skipMany1 space <|> comment)
   where comment = do
-          _ <- try $ char '#'
+          try $ operator "--"
           skipMany (satisfy (/= '\n'))
