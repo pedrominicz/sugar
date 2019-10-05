@@ -17,7 +17,7 @@ data Statement
 
 data Expr
   = Var Name
-  | Lam Name Expr
+  | Lam (Maybe Name) Expr
   | App Expr Expr
   | Num Integer
   | Bool Bool

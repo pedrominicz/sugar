@@ -38,7 +38,11 @@ infer' (Var x) = do
   case M.lookup x env of
     Just x  -> instantiate x
     Nothing -> throwError $ "Unbound variable: " ++ x
-infer' (Lam x y) = do
+infer' (Lam Nothing y) = do
+  t  <- newType
+  ty <- infer' y
+  return $ LamT t ty
+infer' (Lam (Just x) y) = do
   t  <- newType
   ty <- local (M.insert x (Forall IS.empty t)) $ infer' y
   return $ LamT t ty

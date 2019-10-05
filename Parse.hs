@@ -5,8 +5,11 @@ module Parse
 import Expr
 
 import Control.Monad.State
-import Text.Parsec hiding (parse, State)
+
+import Data.Maybe
 import qualified Data.Set as S
+
+import Text.Parsec hiding (parse, State)
 
 type Parser = ParsecT String () (State (S.Set Name))
 
@@ -25,12 +28,16 @@ statement = letStatement
 
 letStatement :: Parser Statement
 letStatement = do
-  (x:xs) <- try $ many1 name <* operator "="
+  (x, args) <- try $ do
+    x    <- name
+    args <- many argument
+    operator "="
+    return (x, args)
   y' <- expression
   seen <- get
-  let y = foldr Lam y' xs
+  let y = foldr Lam y' args
   if S.member x seen
-    then return $ Let x (Fix (Lam x y))
+    then return $ Let x (Fix (Lam (Just x) y))
     else return $ Let x y
 
 expression :: Parser Expr
@@ -51,12 +58,12 @@ ifExpr = do
 lambda :: Parser Expr
 lambda = do
   try $ operator "\\"
-  xs <- many1 name
-  old <- get
+  xs <- many1 argument
   operator "->"
+  old <- get
   y <- expression
   new <- get
-  put $ old `S.union` (S.fromList xs `S.difference` new)
+  put $ old `S.union` (S.fromList (catMaybes xs) `S.difference` new)
   return $ foldr (\x y -> Lam x y) y xs
 
 compareExpr :: Parser Expr
@@ -117,6 +124,12 @@ name = do
   if isReserved s
     then unexpected s
     else return s
+
+argument :: Parser (Maybe String)
+argument = nothing <|> Just <$> name
+  where nothing = do
+          try $ operator "_"
+          return Nothing
 
 reserved :: String -> Parser ()
 reserved s = string s *> notFollowedBy alphaNum *> whitespace

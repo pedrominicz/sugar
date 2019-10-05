@@ -48,7 +48,8 @@ eval' (Fix x) = do
   return $ Closure env (Fix x)
 
 apply :: Value -> Value -> Eval Value
-apply (Closure env (Lam x body)) y =
+apply (Closure _ (Lam Nothing body)) _ = eval' body
+apply (Closure env (Lam (Just x) body)) y =
   local (const $ M.insert x y env) $ eval' body
 apply (Closure env (Fix body)) x = do
   body' <- local (const env) $ eval' (App body (Fix body))
