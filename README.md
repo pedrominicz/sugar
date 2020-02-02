@@ -9,9 +9,11 @@ i : a -> a
 fac : Num -> Num
 > fac 5
 120
+> fac 100
+93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000
 ```
 
-Example based on "Linear lambda calculus and PTIME-completeness" (Harry G. Mairson, 2004). The paper can be found [here][1]. It is shown that type inference can be used to solve boolean circuits. Below, the function `circuit` applied to the arguments `False True True True True False` has type `a -> b -> a` (`True`), that is, the output of the circuit.
+Example based on "Linear lambda calculus and PTIME-completeness" (Harry G. Mairson, 2004). The paper can be found [here][1]. It is shown that type inference can be used to solve boolean circuits. Below, the function `circuit` applied to the arguments `False`, `True`, `True`, `True`, `True`, and `False` has type `a -> b -> a`, that is, the output of the circuit is `True`.
 
 ```
 > True x y = x
