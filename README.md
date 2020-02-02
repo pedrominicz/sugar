@@ -11,6 +11,59 @@ fac : Num -> Num
 120
 ```
 
+Example based on "Linear lambda calculus and PTIME-completeness" (Harry G. Mairson, 2004). The paper can be found [here][1]. It is shown that type inference can be used to solve boolean circuits. Below, the function `circuit` applied to the arguments `False True True True True False` has type `a -> b -> a` (`True`), that is, the output of the circuit.
+
+```
+> True x y = x
+True : a -> b -> a
+> False x y = y
+False : a -> b -> b
+> Not p = p False True
+Not : ((a -> b -> b) -> (c -> d -> c) -> e) -> e
+> And p q = p q False
+And : (a -> (b -> c -> c) -> d) -> a -> d
+> Or p q = p True q
+Or : ((a -> b -> a) -> c -> d) -> c -> d
+> Or False True
+a -> b -> a
+> And True False
+a -> b -> b
+> Not True
+a -> b -> b
+> Same p = p True False
+Same : ((a -> b -> a) -> (c -> d -> d) -> e) -> e
+> Same True
+a -> b -> a
+> Same False
+a -> b -> b
+> K x y = x
+K : a -> b -> a
+> Weird p = K (Same p) (Not p)
+Weird : ((a -> a -> a) -> (b -> b -> b) -> c) -> c
+> Weird True
+a -> a -> a
+> Weird False
+a -> a -> a
+> Pair x y z = z x y
+Pair : a -> b -> (a -> b -> c) -> c
+> Copy p = p (Pair True True) (Pair False False)
+Copy : ((((a -> b -> a) -> (c -> d -> c) -> e) -> e) -> (((f -> g -> g) -> (h -> i -> i) -> j) -> j) -> k) -> k
+> Copy True
+((a -> b -> a) -> (c -> d -> c) -> e) -> e
+> Copy False
+((a -> b -> b) -> (c -> d -> d) -> e) -> e
+> Unweird p = (Copy p) (\p1 p2 -> K (Same p1) (Not p2))
+Unweird : ((((a -> b -> a) -> (c -> d -> c) -> e) -> e) -> (((f -> g -> g) -> (h -> i -> i) -> j) -> j) -> (((k -> l -> k) -> (m -> n -> n) -> o) -> ((p -> q -> q) -> (r -> s -> r) -> t) -> o) -> u) -> u
+> Unweird True
+a -> b -> a
+> Unweird False
+a -> b -> b
+> circuit e1 e2 e3 e4 e5 e6 = (\e7 -> (\e8 -> (Copy (And e7 e8)) (\e9 e10 -> (\e11 -> (\e12 -> Or e11 e12) (Or e10 e6)) (Or e1 e9))) (And e4 e5)) (And e2 e3)
+circuit : ((a -> b -> a) -> c -> (d -> e -> d) -> f -> g) -> (h -> (i -> j -> j) -> k -> (l -> m -> m) -> (((n -> o -> n) -> (p -> q -> p) -> r) -> r) -> (((s -> t -> t) -> (u -> v -> v) -> w) -> w) -> (c -> ((x -> y -> x) -> z -> f) -> g) -> a1) -> h -> (b1 -> (c1 -> d1 -> d1) -> k) -> b1 -> z -> a1
+> circuit False True True True True False
+a -> b -> a
+```
+
 ### Useful Resources
 
 https://github.com/goldfirere/glambda/blob/master/src/Language/Glambda/Lex.hs
@@ -18,3 +71,5 @@ https://github.com/goldfirere/glambda/blob/master/src/Language/Glambda/Lex.hs
 https://github.com/goldfirere/glambda/blob/master/src/Language/Glambda/Parse.hs
 
 http://blog.ezyang.com/2014/05/parsec-try-a-or-b-considered-harmful/
+
+[1]: https://www.cs.brandeis.edu/~mairson/Papers/jfp02.pdf
