@@ -15,11 +15,15 @@ data Type
   | NumT
   | BoolT
 
+instance Show Type where
+  show x = evalState (showType x) []
+
 data Scheme = Forall IS.IntSet Type
   deriving Show
 
-instance Show Type where
-  show x = evalState (showType x) []
+-- Only used in `Test.hs`.
+instance Eq Scheme where
+  Forall _ t1 == Forall _ t2 = show t1 == show t2
 
 showType :: Type -> State [Int] String
 showType = showType' False

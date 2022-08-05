@@ -1,5 +1,6 @@
 *
 !*.hs
+!*.pl
 !.gitignore
 !README.md
 !run

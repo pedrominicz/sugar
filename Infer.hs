@@ -1,5 +1,6 @@
 module Infer
   ( infer
+  , inferType
   ) where
 
 import Expr
@@ -25,6 +26,19 @@ infer expr = do
     t  <- infer' expr
     t' <- applyBindings t
     return $ generalize t'
+
+-- Only used in `Test.hs`.
+inferType :: Expr -> Scheme
+inferType expr =
+  case result of
+    Right x -> x
+    _ -> undefined
+  where
+  result =
+    runExcept $ flip runReaderT M.empty $ flip evalStateT (0, IM.empty) $ do
+      t  <- infer' expr
+      t' <- applyBindings t
+      return $ generalize t'
 
 newType :: Infer Type
 newType = do

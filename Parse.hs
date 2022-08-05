@@ -1,5 +1,12 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Parse
   ( parse
+  , parseExpr
+  , name
+  , operator
+  , parens
+  , whitespace
   ) where
 
 import Expr
@@ -18,6 +25,13 @@ parse s =
   case evalState (runParserT (whitespace *> statement <* eof) () "" s) S.empty of
     Left e  -> Left $ show e
     Right x -> Right x
+
+-- Only used in `Test.hs`.
+parseExpr :: String -> Expr
+parseExpr s =
+  case evalState (runParserT (whitespace *> expression <* eof) () "" s) S.empty of
+    Right x -> x
+    _ -> undefined
 
 isReserved :: Name -> Bool
 isReserved x = elem x ["if", "then", "else", "true", "false"]
@@ -115,7 +129,8 @@ number = try $ do
   whitespace
   return $ Num (read (sign:digits))
 
-name :: Parser String
+-- Also used in `Test.hs`.
+name :: Stream s m Char => ParsecT s u m String
 name = do
   c  <- letter
   cs <- many alphaNum
@@ -134,13 +149,16 @@ argument = nothing <|> Just <$> name
 reserved :: String -> Parser ()
 reserved s = string s *> notFollowedBy alphaNum *> whitespace
 
-operator :: String -> Parser ()
+-- Also used in `Test.hs`.
+operator :: Stream s m Char => String -> ParsecT s u m ()
 operator s = string s *> notFollowedBy (oneOf "%*+-/<=>") *> whitespace
 
-parens :: Parser a -> Parser a
+-- Also used in `Test.hs`.
+parens :: Stream s m Char => ParsecT s u m a -> ParsecT s u m a
 parens p = between (operator "(") (operator ")") p
 
-whitespace :: Parser ()
+-- Also used in `Test.hs`.
+whitespace :: Stream s m Char => ParsecT s u m ()
 whitespace = skipMany (skipMany1 space <|> comment)
   where comment = do
           try $ operator "--"
