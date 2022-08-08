@@ -35,10 +35,19 @@ inferType expr =
     _ -> undefined
   where
   result =
-    runExcept $ flip runReaderT M.empty $ flip evalStateT (0, IM.empty) $ do
+    runExcept $ flip runReaderT env $ flip evalStateT (0, IM.empty) $ do
       t  <- infer' expr
       t' <- applyBindings t
       return $ generalize t'
+
+  env :: M.Map Name Scheme
+  env = M.fromList [("k", k), ("s", s)]
+
+  s :: Scheme
+  s = Forall (IS.fromList [0, 1, 2]) (LamT (LamT (TVar 0) (LamT (TVar 1) (TVar 2))) (LamT (LamT (TVar 0) (TVar 1)) (LamT (TVar 0) (TVar 2))))
+
+  k :: Scheme
+  k = Forall (IS.fromList [0, 1]) (LamT (TVar 0) (LamT (TVar 1) (TVar 0)))
 
 newType :: Infer Type
 newType = do

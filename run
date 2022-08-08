@@ -2,14 +2,22 @@
 
 set -e
 
+trap clean 0 1 2 3 6
+
+clean() {
+  rm -f a.out *.{hi,o}
+}
+
 test() {
   swipl -c generate_test.pl --stand_alone=true --goal=main -o a.out
-  echo 'generating test...'
+  echo 'generating tests...'
   time ./a.out >test.txt
-  rm a.out
 
-  echo 'running test...'
-  time runhaskell Test.hs <test.txt
+  ghc -O2 -static -rtsopts -main-is Test.main Test.hs -o a.out
+  echo 'running tests...'
+  time ./a.out +RTS -M4g <test.txt
+
+  echo 'done.'
 }
 
 case "$1" in
@@ -18,4 +26,5 @@ case "$1" in
   test)     test;;
   *.hs)     exec ghci "$1";;
   *.pl)     exec swipl "$1";;
+  *)        echo "cannot run '$1'";;
 esac
