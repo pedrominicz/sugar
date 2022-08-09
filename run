@@ -8,23 +8,54 @@ clean() {
   rm -f a.out *.{hi,o}
 }
 
-test() {
+# Should take a few minutes to generate tests.
+generate_test() {
   swipl -c generate_test.pl --stand_alone=true --goal=main -o a.out
   echo 'generating tests...'
   time ./a.out >test.txt
+}
 
-  ghc -O2 -static -rtsopts -main-is Test.main Test.hs -o a.out
-  echo 'running tests...'
-  time ./a.out +RTS -M4g <test.txt
+# Should take a few _hours_ minutes to generate random tests.
+generate_random_test() {
+  swipl -c generate_random_test.pl --stand_alone=true --goal=main -o a.out
+  echo 'generating random tests...'
+  echo 'WARNING: this can take a few hours to finish!'
+  # `>>` instead of `>`, because overwriting hours of computationally expensive
+  # random generation can be devastating.
+  time ./a.out >>random_test.txt
+}
+
+test() {
+  if [ ! -f 'test.txt' -a ! -f 'random_test.txt' ]; then
+    echo 'generate tests first!'
+    exit 1
+  fi
+
+  echo 'compiling...'
+  ghc -O2 -static -rtsopts -main-is Test.main Test.hs -o a.out >/dev/null
+
+  if [ -f 'test.txt' ]; then
+    echo 'running tests...'
+    time ./a.out +RTS -M4g <test.txt
+  fi
+
+  if [ -f 'random_test.txt' ]; then
+    echo 'running random tests...'
+    time ./a.out +RTS -M4g <random_test.txt
+  fi
 
   echo 'done.'
 }
 
 case "$1" in
+  generate_test)          generate_test;;
+  generate_random_test)   generate_random_test;;
+  test)                   test;;
+
   Main.hs)  exec runhaskell Main.hs;;
   Test.hs)  exec runhaskell Test.hs;;
-  test)     test;;
   *.hs)     exec ghci "$1";;
   *.pl)     exec swipl "$1";;
-  *)        echo "cannot run '$1'";;
+
+  *)  echo "cannot run '$1'";;
 esac

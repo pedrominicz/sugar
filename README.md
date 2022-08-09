@@ -70,6 +70,12 @@ a -> b -> a
 
 https://arxiv.org/pdf/1608.03912.pdf
 
+https://arxiv.org/pdf/1612.07682.pdf
+
 https://gist.github.com/pedrominicz/475b110a30f32fb4fc0b338654bbbcc1
+
+https://gist.github.com/pedrominicz/7b5669b341e0fa7e61f4e2b179049346
+
+https://gist.github.com/pedrominicz/c20bbaf5f182129945dff1a748266ee4
 
 [1]: https://www.cs.brandeis.edu/~mairson/Papers/jfp02.pdf

@@ -3,8 +3,8 @@
 :- set_prolog_flag(optimise, true).
 :- set_prolog_flag(optimise_unify, true).
 
-% Generate one million closed simply-typed lambda calculus expressions and one
-% million typable SK-combinator calculus expressions together with their types.
+% Generate 1,016,508 closed simply-typed lambda calculus terms and 463,637
+% typable SK-combinator calculus terms together with their types.
 %
 % Based on Paul Tarau's paper A Hiking Trip Through the Orders of Magnitude:
 % Deriving Efficient Generators for Closed Simply-Typed Lambda Terms and Normal
@@ -17,7 +17,11 @@ n2s(N, s(X)) :- N > 0, N0 is N - 1, n2s(N0, X).
 
 down(s(X), X).
 
-% Generate simply-typed lambda calculus expressions of a given size.
+% Generate simply-typed lambda calculus terms of a given size.
+%
+% Note that there are multiple definitions for the size of a lambda term. In
+% particular, the definition implicitly used here is different from the one
+% used in `generate_random_test.pl`.
 lambda(N, X, A) :- n2s(N, S), lambda(_, X, A, [], S, z).
 
 lambda(v(X : A), v(X), A, Ctx) -->
@@ -30,7 +34,7 @@ lambda(a(X, Y), a(NewX, NewY), B, Ctx) -->
   lambda(X, NewX, A -> B, Ctx),
   lambda(Y, NewY, A, Ctx).
 
-% Generate typable SK-combinator calculus expression of a given size.
+% Generate typable SK-combinator calculus terms of a given size.
 sk(N, X, A) :- n2s(N, S), sk(X, _, A, S, z).
 
 sk(s, s, (A -> B -> C) -> (A -> B) -> A -> C) --> [].
@@ -41,7 +45,7 @@ sk(a(X, Y), a(NewX : (A -> B), NewY : A), B) -->
   sk(Y, NewY, A0),
   { unify_with_occurs_check(A0, A) }.
 
-% Pretty print an expression.
+% Pretty print a term.
 pretty(X) :-
   numbervars(X, 0, _),
   pretty(X, Xs, []),
@@ -65,8 +69,8 @@ pretty_type(A -> B) -->
   ['('], pretty_type(A), !, [' -> '], pretty_type(B), [')'].
 pretty_type(A) --> [A].
 
-% Print all simply-typed lambda calculus expressions of a given size together
-% with their types.
+% Print all simply-typed lambda calculus terms of a given size together with
+% their types.
 show_lambda(N) :-
   lambda(N, X, A),
   pretty(X),
@@ -74,8 +78,8 @@ show_lambda(N) :-
   fail.
 show_lambda(_).
 
-% Print all typable SK-combinator calculus expressions of a given size together
-% with their types.
+% Print all typable SK-combinator calculus terms of a given size together with
+% their types.
 show_sk(N) :-
   sk(N, X, A),
   pretty(X),
