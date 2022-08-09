@@ -13,6 +13,8 @@ fac : Num -> Num
 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000
 ```
 
+The type inference algorithm here is, at the time of writing, the thing I've programmed that I tested the most. I was pretty sure I had got it right, but now, after running almost 1.5 million tests big and small, I am pretty, pretty sure.
+
 Example based on "Linear lambda calculus and PTIME-completeness" (Harry G. Mairson, 2004). The paper can be found [here][1]. In the paper, it is shown that type inference can be used to solve boolean circuits. Below, the function `circuit` applied to the arguments `False`, `True`, `True`, `True`, `True`, and `False` has type `a -> b -> a`, that is, the output of the circuit is `True`.
 
 ```
@@ -77,5 +79,7 @@ https://gist.github.com/pedrominicz/475b110a30f32fb4fc0b338654bbbcc1
 https://gist.github.com/pedrominicz/7b5669b341e0fa7e61f4e2b179049346
 
 https://gist.github.com/pedrominicz/c20bbaf5f182129945dff1a748266ee4
+
+https://gist.github.com/pedrominicz/23584d8f2e74eb0898c19466f7bd06f6
 
 [1]: https://www.cs.brandeis.edu/~mairson/Papers/jfp02.pdf

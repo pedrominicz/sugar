@@ -4,7 +4,8 @@
 :- set_prolog_flag(optimise, true).
 :- set_prolog_flag(optimise_unify, true).
 
-% Randomly generate 1,000 simply-typed lambda calculus terms using Boltzmann
+% Randomly generate 1,000 simply-typed lambda calculus terms and 1,000 typable
+% SK-combinator calculus terms together with their types using Boltzmann
 % samplers.
 %
 % Based on the paper Random generation of closed simply-typed λ-terms: a
@@ -15,7 +16,7 @@
 % Note that there are multiple definitions for the size of a lambda term. In
 % particular, the definition implicitly used here is different from the one
 % used in `generate_test.pl`.
-min_size(120).
+min_lambda_size(120).
 boltzmann_variable(R) :- R < 0.3569605561766718.
 boltzmann_variable_zero(R) :- R < 0.7044187641738427.
 boltzmann_lambda(R) :- R < 0.6525417920028290.
@@ -27,7 +28,7 @@ next(R, Size1, Size2) :-
 random_lambda(X, A) :-
   random(R),
   random_lambda(X, A, [], R, 0, Size),
-  min_size(MinSize),
+  min_lambda_size(MinSize),
   Size >= MinSize,
   !.
 random_lambda(X, A) :- random_lambda(X, A).
@@ -59,6 +60,42 @@ multithreaded_random_lambda(X, A) :-
   maplist(=(Goal), Goals),
   first_solution([X, A], Goals, []).
 
+min_sk_size(90).
+boltzmann_combinator(R) :- R < 0.5027624308761950.
+
+next(R1, R2, Size1, Size2) :-
+  random(R1),
+  random(R2),
+  Size2 is Size1 + 1.
+
+random_sk(X, A) :-
+  random(R),
+  random_sk(X, A, R, 0, Size),
+  min_sk_size(MinSize),
+  Size >= MinSize,
+  !.
+random_sk(X, A) :- random_sk(X, A).
+
+random_sk(X, A, R) -->
+  { boltzmann_combinator(R), !, random(NewR) },
+  random_combinator(X, A, NewR).
+random_sk(a(X, Y), B, _) -->
+  next(R1, R2),
+  random_sk(X, A -> B, R1),
+  random_sk(Y, A0, R2),
+  { unify_with_occurs_check(A0, A) }.
+
+random_combinator(k, A -> _B -> A, R) --> { R < 0.5, ! }.
+random_combinator(s, (A -> B -> C) -> (A -> B) -> A -> C, _) --> [].
+
+multithreaded_random_sk(X, A) :-
+  prolog_flag(cpu_count, MaxThreads0),
+  MaxThreads is MaxThreads0 - 1,
+  Goal = random_sk(X, A),
+  length(Goals, MaxThreads),
+  maplist(=(Goal), Goals),
+  first_solution([X, A], Goals, []).
+
 convert(X, NewX) :- convert(X, NewX, []).
 
 convert(z, v(X), [X|_]).
@@ -67,6 +104,8 @@ convert(l(Y), l(X, NewY), Ctx) :- convert(Y, NewY, [X|Ctx]).
 convert(a(X, Y), a(NewX, NewY), Ctx) :-
   convert(X, NewX, Ctx),
   convert(Y, NewY, Ctx).
+convert(s, s, _).
+convert(k, k, _).
 
 % Pretty print a term.
 pretty(X0) :-
@@ -76,6 +115,8 @@ pretty(X0) :-
   maplist(write, Xs),
   nl.
 
+pretty(s) --> [s].
+pretty(k) --> [k].
 pretty(v('$VAR'(I))) --> [x, I].
 pretty(l('$VAR'(I), X)) --> ['(\\', x, I, ' -> '], pretty(X), [')'].
 pretty(a(X, Y)) --> ['('], pretty(X), [' '], pretty(Y), [')'].
@@ -94,6 +135,12 @@ pretty_type(A) --> [A].
 main :-
   between(1, 1000, _),
   multithreaded_random_lambda(X, A),
+  pretty(X),
+  pretty_type(A),
+  fail.
+main :-
+  between(1, 1000, _),
+  multithreaded_random_sk(X, A),
   pretty(X),
   pretty_type(A),
   fail.
